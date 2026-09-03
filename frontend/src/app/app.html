@@ -1,0 +1,168 @@
+<a
+  class="skip-link"
+  href="#main-content"
+>
+  Skip to content
+</a>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">
+        <img
+          alt=""
+          class="brand-image"
+          src="/images/worktracker-mascot.png"
+        />
+      </div>
+
+      <div class="brand-copy">
+        <span class="brand-name">
+          WorkTracker
+        </span>
+
+        <span class="brand-subtitle">
+          night log
+        </span>
+      </div>
+    </div>
+
+    <nav
+      aria-label="Primary navigation"
+      class="navigation"
+    >
+      <a
+        [routerLinkActiveOptions]="{ exact: true }"
+        class="nav-item"
+        routerLink="/"
+        routerLinkActive="active"
+        ariaCurrentWhenActive="page"
+      >
+        <span class="nav-icon">⌂</span>
+        Dashboard
+      </a>
+
+      <a
+        class="nav-item"
+        routerLink="/quests"
+        routerLinkActive="active"
+        ariaCurrentWhenActive="page"
+      >
+        <span class="nav-icon">✓</span>
+        Quests
+      </a>
+
+      <a
+        class="nav-item"
+        routerLink="/weekly-log"
+        routerLinkActive="active"
+        ariaCurrentWhenActive="page"
+      >
+        <span class="nav-icon">✦</span>
+        Weekly Log
+      </a>
+
+      <a
+        class="nav-item"
+        routerLink="/history"
+        routerLinkActive="active"
+        ariaCurrentWhenActive="page"
+      >
+        <span class="nav-icon">◷</span>
+        History
+      </a>
+
+      <a
+        class="nav-item"
+        routerLink="/settings"
+        routerLinkActive="active"
+        ariaCurrentWhenActive="page"
+      >
+        <span class="nav-icon">⚙</span>
+        Settings
+      </a>
+    </nav>
+
+    <div class="sidebar-spacer"></div>
+
+    <div class="sidebar-card">
+      <span class="sidebar-card-label">
+        Local mode
+      </span>
+
+      <strong>
+        All data stays on this device.
+      </strong>
+    </div>
+  </aside>
+
+  <main
+    class="main-content"
+    id="main-content"
+  >
+    <router-outlet></router-outlet>
+  </main>
+
+  <nav
+    aria-label="Mobile navigation"
+    class="mobile-navigation"
+  >
+    <a
+      [routerLinkActiveOptions]="{ exact: true }"
+      class="mobile-nav-item"
+      routerLink="/"
+      routerLinkActive="active"
+      ariaCurrentWhenActive="page"
+    >
+      <span>⌂</span>
+      <small>Home</small>
+    </a>
+
+    <a
+      class="mobile-nav-item"
+      routerLink="/quests"
+      routerLinkActive="active"
+      ariaCurrentWhenActive="page"
+    >
+      <span>✓</span>
+      <small>Quests</small>
+    </a>
+
+    <a
+      class="mobile-nav-item"
+      routerLink="/weekly-log"
+      routerLinkActive="active"
+      ariaCurrentWhenActive="page"
+    >
+      <span>✦</span>
+      <small>Log</small>
+    </a>
+
+    <a
+      class="mobile-nav-item"
+      routerLink="/history"
+      routerLinkActive="active"
+      ariaCurrentWhenActive="page"
+    >
+      <span>◷</span>
+      <small>History</small>
+    </a>
+
+    <a
+      class="mobile-nav-item mobile-settings-item"
+      routerLink="/settings"
+      routerLinkActive="active"
+      ariaCurrentWhenActive="page"
+    >
+  <span class="mobile-mascot">
+    <img
+      alt=""
+      src="/images/worktracker-mascot.png"
+    />
+  </span>
+
+      <small>
+        Settings
+      </small>
+    </a>
+  </nav>
+</div>

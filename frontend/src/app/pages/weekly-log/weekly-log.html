@@ -1,0 +1,205 @@
+<section class="weekly-log-page">
+  <header class="page-header weekly-log-header">
+    <div>
+      <span class="section-kicker">
+        WEEKLY LOG
+      </span>
+
+      <h1>Your weekly report</h1>
+
+      <p>
+        Review what moved forward and copy a clean
+        Markdown summary when you need it.
+      </p>
+    </div>
+
+    <div class="week-picker">
+      <button
+        (click)="previousWeek()"
+        aria-label="Previous week"
+        class="week-nav-button"
+        type="button"
+      >
+        ←
+      </button>
+
+      <label class="week-date-field">
+        <span>Week containing</span>
+
+        <input
+          (change)="updateSelectedDate($event)"
+          [value]="selectedDate()"
+          type="date"
+        />
+      </label>
+
+      <button
+        (click)="nextWeek()"
+        aria-label="Next week"
+        class="week-nav-button"
+        type="button"
+      >
+        →
+      </button>
+
+      <button
+        (click)="currentWeek()"
+        class="current-week-button"
+        type="button"
+      >
+        This week
+      </button>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <section class="report-state card">
+      Loading weekly log...
+    </section>
+  } @else if (loadError()) {
+    <section class="report-state error card">
+      Could not generate the weekly log.
+      Check that the local backend is running.
+    </section>
+  } @else if (report(); as weeklyReport) {
+
+    <section class="week-overview card">
+      <div>
+        <span class="section-kicker">
+          SELECTED WEEK
+        </span>
+
+        <h2>
+          {{ formatDisplayDate(weeklyReport.weekStart) }}
+          –
+          {{ formatDisplayDate(weeklyReport.weekEnd) }}
+        </h2>
+      </div>
+
+      <div class="week-completion">
+        <strong>
+          {{ completionRate() }}%
+        </strong>
+
+        <span>
+          completion
+        </span>
+      </div>
+    </section>
+
+    <section class="report-summary-grid">
+      <article class="report-summary-card card">
+        <span>Total quests</span>
+
+        <strong>
+          {{ weeklyReport.totalTasks }}
+        </strong>
+      </article>
+
+      <article class="report-summary-card card completed">
+        <span>Completed</span>
+
+        <strong>
+          {{ weeklyReport.completedTasks }}
+        </strong>
+      </article>
+
+      <article class="report-summary-card card active">
+        <span>In progress</span>
+
+        <strong>
+          {{ weeklyReport.inProgressTasks }}
+        </strong>
+      </article>
+
+      <article class="report-summary-card card blocked">
+        <span>Blocked</span>
+
+        <strong>
+          {{ weeklyReport.blockedTasks }}
+        </strong>
+      </article>
+    </section>
+
+    <section class="weekly-progress-card card">
+      <div class="weekly-progress-heading">
+        <div>
+          <span class="section-kicker">
+            WEEKLY PROGRESS
+          </span>
+
+          <h2>
+            {{ weeklyReport.completedTasks }}
+            of
+            {{ weeklyReport.totalTasks }}
+            quests completed
+          </h2>
+        </div>
+
+        <strong>
+          {{ completionRate() }}%
+        </strong>
+      </div>
+
+      <div class="progress-track">
+        <div
+          [style.width.%]="completionRate()"
+          class="progress-fill"
+        ></div>
+      </div>
+    </section>
+
+    <section class="markdown-panel card">
+      <div class="section-heading">
+        <div>
+          <span class="section-kicker">
+            GENERATED REPORT
+          </span>
+
+          <h2>Markdown preview</h2>
+        </div>
+
+        <button
+          (click)="copyMarkdown()"
+          class="copy-report-button"
+          type="button"
+        >
+          @switch (copyState()) {
+            @case ('copied') {
+              Copied ✓
+            }
+            @case ('error') {
+              Copy failed
+            }
+            @default {
+              Copy Markdown
+            }
+          }
+        </button>
+        <span
+          aria-atomic="true"
+          aria-live="polite"
+          class="sr-only"
+          role="status"
+        >
+          {{
+                    copyState() === 'copied'
+                      ? 'Markdown copied to clipboard.'
+                      : copyState() === 'error'
+                        ? 'Could not copy Markdown.'
+                        : ''
+                  }}
+        </span>
+      </div>
+
+      @if (weeklyReport.totalTasks === 0) {
+        <div class="report-empty-note">
+          No quests were logged during this week.
+          The generated report is still available below.
+        </div>
+      }
+
+      <pre class="markdown-preview">{{ weeklyReport.markdown }}</pre>
+    </section>
+  }
+</section>

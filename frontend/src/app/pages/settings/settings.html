@@ -1,0 +1,205 @@
+<section class="settings-page">
+  <header class="page-header">
+    <div>
+      <span class="section-kicker">
+        SETTINGS
+      </span>
+
+      <h1>
+        Make WorkTracker yours
+      </h1>
+
+      <p>
+        Personalize how your local work journal feels.
+      </p>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <section
+      aria-live="polite"
+      class="settings-state card"
+      role="status"
+    >
+      Loading your settings...
+    </section>
+  } @else if (loadError()) {
+    <section
+      class="settings-state error card"
+      role="alert"
+    >
+      Could not load your settings.
+      Check that the local backend is running.
+    </section>
+  } @else {
+    <form
+      (ngSubmit)="save()"
+      [attr.aria-busy]="saving()"
+      [formGroup]="settingsForm"
+      class="settings-form"
+    >
+      <section class="settings-card card">
+        <div class="settings-card-heading">
+          <div>
+            <span class="section-kicker">
+              PROFILE
+            </span>
+
+            <h2>
+              Your workspace
+            </h2>
+
+            <p>
+              This name is used in your Dashboard
+              greetings and contextual messages.
+            </p>
+          </div>
+
+          <div class="profile-mark">
+            {{
+              settingsForm.controls
+                .displayName.value
+                .trim()
+                .charAt(0)
+                .toUpperCase() || '?'
+            }}
+          </div>
+        </div>
+
+        <label class="settings-field">
+          <span>
+            Display name
+          </span>
+
+          <input
+            [attr.aria-describedby]="
+            settingsForm.controls.displayName.touched &&
+            settingsForm.controls.displayName.invalid
+              ? 'display-name-error'
+              : null
+          "
+            [attr.aria-invalid]="
+            settingsForm.controls.displayName.touched &&
+            settingsForm.controls.displayName.invalid
+          "
+            formControlName="displayName"
+            maxlength="80"
+            placeholder="Your name"
+            type="text"
+          />
+          @if (settingsForm.controls
+            .displayName.touched &&
+          settingsForm.controls
+            .displayName.invalid) {
+            <small
+              class="settings-field-error"
+              id="display-name-error"
+            >
+              Enter a display name.
+            </small>
+          }
+        </label>
+      </section>
+
+      <section class="settings-card card">
+        <div class="settings-card-heading">
+          <div>
+            <span class="section-kicker">
+              DASHBOARD
+            </span>
+
+            <h2>
+              Contextual messages
+            </h2>
+
+            <p>
+              Let WorkTracker react to your time
+              of day and weekly progress.
+            </p>
+          </div>
+        </div>
+
+        <label class="toggle-row">
+          <div>
+            <strong>
+              Adaptive greetings and quotes
+            </strong>
+
+            <span>
+              Uses the local CSV message library
+              to change Dashboard text based on
+              your current week.
+            </span>
+          </div>
+
+          <span class="toggle-control">
+            <input
+              formControlName="contextualMessagesEnabled"
+              type="checkbox"
+            />
+
+            <span class="toggle-track">
+              <span class="toggle-thumb"></span>
+            </span>
+          </span>
+        </label>
+      </section>
+
+      <section class="settings-card local-card card">
+        <div class="local-icon">
+          ◌
+        </div>
+
+        <div>
+          <span class="section-kicker">
+            LOCAL MODE
+          </span>
+
+          <h2>
+            Your settings stay on this device
+          </h2>
+
+          <p>
+            WorkTracker stores these preferences
+            alongside your local work data.
+            No account or cloud sync is required.
+          </p>
+        </div>
+      </section>
+
+      @if (saveError()) {
+        <div
+          class="settings-message error"
+          role="alert"
+        >
+          Your settings could not be saved.
+          Check that the local backend is running.
+        </div>
+      }
+
+      @if (saved()) {
+        <div
+          aria-live="polite"
+          class="settings-message success"
+          role="status"
+        >
+          Settings saved.
+        </div>
+      }
+
+      <div class="settings-actions">
+        <button
+          [disabled]="saving()"
+          class="save-settings-button"
+          type="submit"
+        >
+          @if (saving()) {
+            Saving...
+          } @else {
+            Save Settings
+          }
+        </button>
+      </div>
+    </form>
+  }
+</section>

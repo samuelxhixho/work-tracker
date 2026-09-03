@@ -1,0 +1,61 @@
+{
+  "name": "worktracker-desktop",
+  "version": "1.0.0",
+  "description": "WorkTracker local desktop application",
+  "author": "Samuel Xhixho",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "build:win": "electron-builder --win nsis"
+  },
+  "devDependencies": {
+    "electron": "^44.1.1",
+    "electron-builder": "^26.15.3"
+  },
+  "allowScripts": {
+    "electron@44.1.1": true
+  },
+  "build": {
+    "appId": "com.worktracker.desktop",
+    "productName": "WorkTracker",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "package.json",
+      "build/icon.png"
+    ],
+    "extraResources": [
+      {
+        "from": "../backend/target/backend-0.0.1-SNAPSHOT.jar",
+        "to": "backend/backend-0.0.1-SNAPSHOT.jar"
+      },
+      {
+        "from": "runtime",
+        "to": "runtime"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "WorkTracker",
+      "artifactName": "WorkTracker-Setup-${version}.${ext}"
+    }
+  }
+}

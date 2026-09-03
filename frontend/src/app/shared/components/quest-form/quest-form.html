@@ -1,0 +1,178 @@
+<div class="modal-backdrop">
+  <section
+    aria-labelledby="quest-form-title"
+    aria-modal="true"
+    class="quest-modal"
+    role="dialog"
+  >
+    <div class="quest-modal-header">
+      <div>
+        <span class="section-kicker">
+          {{ task() ? 'EDIT QUEST' : 'NEW QUEST' }}
+        </span>
+
+        <h2 id="quest-form-title">
+          {{
+            task()
+              ? 'Update your work'
+              : 'Log your work'
+          }}
+        </h2>
+      </div>
+
+      <button
+        (click)="close()"
+        aria-label="Close quest form"
+        class="modal-close"
+        type="button"
+      >
+        ×
+      </button>
+    </div>
+
+    <form
+      (ngSubmit)="save()"
+      [attr.aria-busy]="saving()"
+      [formGroup]="taskForm"
+      class="quest-form"
+    >
+      <label class="form-field">
+        <span>Title</span>
+
+        <input
+          [attr.aria-describedby]="
+          taskForm.controls.title.touched &&
+          taskForm.controls.title.invalid
+            ? 'quest-title-error'
+            : null
+        "
+          [attr.aria-invalid]="
+          taskForm.controls.title.touched &&
+          taskForm.controls.title.invalid
+        "
+          autofocus
+          formControlName="title"
+          maxlength="200"
+          placeholder="What did you work on?"
+          type="text"
+        />
+
+        @if (taskForm.controls.title.touched &&
+        taskForm.controls.title.invalid) {
+          <small
+            class="field-error"
+            id="quest-title-error"
+          >
+            A title is required.
+          </small>
+        }
+      </label>
+
+      <label class="form-field">
+        <span>Description</span>
+
+        <textarea
+          formControlName="description"
+          placeholder="Add a short note about the work..."
+          rows="4"
+        ></textarea>
+      </label>
+
+      <div class="form-row">
+        <label class="form-field">
+          <span>Category</span>
+
+          <select formControlName="category">
+            <option value="FRONTEND">
+              Frontend
+            </option>
+
+            <option value="BACKEND">
+              Backend
+            </option>
+
+            <option value="DEVOPS">
+              DevOps
+            </option>
+
+            <option value="TESTING">
+              Testing
+            </option>
+
+            <option value="MEETING">
+              Meeting
+            </option>
+
+            <option value="OTHER">
+              Other
+            </option>
+          </select>
+        </label>
+
+        <label class="form-field">
+          <span>Status</span>
+
+          <select formControlName="status">
+            <option value="IN_PROGRESS">
+              In Progress
+            </option>
+
+            <option value="COMPLETED">
+              Completed
+            </option>
+
+            <option value="BLOCKED">
+              Blocked
+            </option>
+          </select>
+        </label>
+      </div>
+
+      <label class="form-field">
+        <span>Work date</span>
+
+        <input
+          formControlName="workDate"
+          type="date"
+        />
+      </label>
+
+      @if (saveError()) {
+        <div
+          class="form-error"
+          role="alert"
+        >
+          The quest could not be saved.
+          Check that the local backend is running.
+        </div>
+      }
+
+      <div class="quest-form-actions">
+        <button
+          (click)="close()"
+          [disabled]="saving()"
+          class="secondary-button"
+          type="button"
+        >
+          Cancel
+        </button>
+
+        <button
+          [disabled]="saving()"
+          class="save-quest-button"
+          type="submit"
+        >
+          @if (saving()) {
+            Saving...
+          } @else {
+            {{
+              task()
+                ? 'Update Quest'
+                : 'Save Quest'
+            }}
+          }
+        </button>
+      </div>
+    </form>
+  </section>
+</div>

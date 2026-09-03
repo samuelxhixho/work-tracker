@@ -1,0 +1,318 @@
+.weekly-log-page {
+  display: grid;
+  gap: 20px;
+}
+
+.weekly-log-header {
+  align-items: flex-end;
+}
+
+.week-picker {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.week-date-field {
+  display: grid;
+  gap: 7px;
+
+  span {
+    color: #8996a2;
+    font-size: 0.7rem;
+    font-weight: 600;
+  }
+
+  input {
+    min-height: 42px;
+    padding: 0 12px;
+
+    border: 1px solid rgba(255, 244, 228, 0.08);
+    border-radius: 11px;
+
+    color: #f3e9dc;
+    background: rgba(255, 255, 255, 0.03);
+
+    outline: none;
+
+    &:focus {
+      border-color: rgba(234, 164, 100, 0.5);
+
+      box-shadow: 0 0 0 3px rgba(234, 164, 100, 0.08);
+    }
+  }
+}
+
+.week-nav-button,
+.current-week-button,
+.copy-report-button {
+  min-height: 42px;
+
+  border: 1px solid rgba(255, 244, 228, 0.08);
+  border-radius: 11px;
+
+  color: #a9b2bb;
+  background: rgba(255, 255, 255, 0.025);
+
+  font: inherit;
+  cursor: pointer;
+
+  transition: color 160ms ease,
+  border-color 160ms ease,
+  background 160ms ease,
+  transform 160ms ease;
+
+  &:hover {
+    color: #f0b276;
+
+    border-color: rgba(240, 178, 118, 0.18);
+
+    background: rgba(240, 178, 118, 0.06);
+
+    transform: translateY(-1px);
+  }
+}
+
+.week-nav-button {
+  width: 42px;
+  padding: 0;
+
+  font-size: 1rem;
+}
+
+.current-week-button {
+  padding: 0 14px;
+}
+
+.report-state {
+  padding: 48px 24px;
+
+  border-radius: 22px;
+
+  color: #84909b;
+  text-align: center;
+
+  &.error {
+    color: #d89d92;
+  }
+}
+
+.week-overview {
+  padding: 26px;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+
+  border-radius: 22px;
+
+  transition: border-color 180ms ease,
+  box-shadow 180ms ease;
+
+  &:hover {
+    border-color: rgba(240, 178, 118, 0.12);
+
+    box-shadow: 0 16px 42px rgba(0, 0, 0, 0.24);
+  }
+
+  h2 {
+    margin: 0;
+
+    color: #fff1e2;
+    font-size: 1.45rem;
+  }
+}
+
+.week-completion {
+  min-width: 100px;
+
+  text-align: right;
+
+  strong {
+    display: block;
+
+    color: #efb06d;
+    font-size: 2rem;
+  }
+
+  span {
+    color: #7f8d99;
+    font-size: 0.72rem;
+  }
+}
+
+.report-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.report-summary-card {
+  padding: 20px;
+  border-radius: 18px;
+
+  transition: transform 180ms ease,
+  border-color 180ms ease,
+  box-shadow 180ms ease;
+
+  &:hover {
+    transform: translateY(-3px);
+
+    border-color: rgba(240, 178, 118, 0.14);
+
+    box-shadow: 0 16px 42px rgba(0, 0, 0, 0.26);
+  }
+
+  span {
+    color: #8996a2;
+    font-size: 0.76rem;
+  }
+
+  strong {
+    display: block;
+    margin-top: 8px;
+
+    color: #fff1e2;
+    font-size: 1.8rem;
+  }
+
+  &.completed strong {
+    color: #9ac8a5;
+  }
+
+  &.active strong {
+    color: #e2c58b;
+  }
+
+  &.blocked strong {
+    color: #d89d92;
+  }
+}
+
+.weekly-progress-card {
+  padding: 26px;
+  border-radius: 22px;
+}
+
+.weekly-progress-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+
+  h2 {
+    margin: 0;
+
+    color: #fff1e2;
+    font-size: 1.15rem;
+  }
+
+  > strong {
+    color: #efb06d;
+    font-size: 1.4rem;
+  }
+}
+
+.markdown-panel {
+  padding: 26px;
+  border-radius: 22px;
+}
+
+.copy-report-button {
+  padding: 0 14px;
+}
+
+.report-empty-note {
+  margin-top: 20px;
+  padding: 12px 14px;
+
+  border-radius: 12px;
+
+  color: #8996a2;
+  background: rgba(255, 255, 255, 0.025);
+
+  font-size: 0.78rem;
+}
+
+.markdown-preview {
+  margin: 22px 0 0;
+  padding: 22px;
+
+  overflow-x: auto;
+
+  border: 1px solid rgba(255, 244, 228, 0.06);
+  border-radius: 16px;
+
+  color: #d8d1c8;
+  background: rgba(4, 10, 16, 0.48);
+
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+
+  font-family: "Cascadia Code",
+  "JetBrains Mono",
+  monospace;
+
+  font-size: 0.8rem;
+  line-height: 1.7;
+
+  white-space: pre-wrap;
+  word-break: break-word;
+
+  scrollbar-width: thin;
+  scrollbar-color: rgba(213, 156, 105, 0.35) transparent;
+}
+
+@media (max-width: 1180px) {
+  .report-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .weekly-log-header {
+    align-items: stretch;
+  }
+
+  .week-picker {
+    display: grid;
+    grid-template-columns: 44px 1fr 44px;
+  }
+
+  .week-date-field input {
+    width: 100%;
+  }
+
+  .current-week-button {
+    grid-column: 1 / -1;
+  }
+
+  .report-summary-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .week-overview {
+    align-items: flex-start;
+  }
+
+  .week-completion {
+    min-width: auto;
+  }
+
+  .weekly-progress-heading {
+    align-items: flex-start;
+  }
+
+  .markdown-panel {
+    padding: 20px 16px;
+  }
+
+  .markdown-panel .section-heading {
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .copy-report-button {
+    flex-shrink: 0;
+  }
+}

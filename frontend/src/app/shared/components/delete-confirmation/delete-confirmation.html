@@ -1,0 +1,68 @@
+<div class="modal-backdrop">
+  <section
+    [attr.aria-busy]="deleting()"
+    aria-describedby="delete-quest-description"
+    aria-labelledby="delete-quest-title"
+    aria-modal="true"
+    class="delete-modal"
+    role="alertdialog"
+  >
+    <div class="delete-icon">
+      !
+    </div>
+
+    <span class="section-kicker">
+      DELETE QUEST
+    </span>
+
+    <h2 id="delete-quest-title">
+      Remove this quest?
+    </h2>
+
+    <p id="delete-quest-description">
+      <strong>
+        {{ task().title }}
+      </strong>
+      will be permanently removed from your local work log.
+    </p>
+
+    <p class="delete-warning">
+      This cannot be undone.
+    </p>
+
+    @if (deleteError()) {
+      <div
+        class="form-error"
+        role="alert"
+      >
+        The quest could not be deleted.
+        Check that the local backend is running.
+      </div>
+    }
+
+    <div class="delete-actions">
+      <button
+        (click)="close()"
+        [disabled]="deleting()"
+        class="secondary-button"
+        type="button"
+        autofocus
+      >
+        Keep Quest
+      </button>
+
+      <button
+        (click)="confirmDelete()"
+        [disabled]="deleting()"
+        class="confirm-delete-button"
+        type="button"
+      >
+        @if (deleting()) {
+          Deleting...
+        } @else {
+          Delete Quest
+        }
+      </button>
+    </div>
+  </section>
+</div>

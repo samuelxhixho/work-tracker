@@ -1,0 +1,394 @@
+<section class="history-page">
+  <header class="page-header history-header">
+    <div>
+      <span class="section-kicker">
+        HISTORY
+      </span>
+
+      <h1>
+        Your work over time
+      </h1>
+
+      <p>
+        Review previous weeks, progress and what you accomplished.
+      </p>
+    </div>
+  </header>
+
+  <section class="history-filters card">
+    <div class="history-search">
+      <span class="filter-label">
+        Search
+      </span>
+
+      <input
+        type="search"
+        placeholder="Search history..."
+        [value]="searchTerm()"
+        (input)="updateSearch($event)"
+      />
+    </div>
+
+    <label class="history-filter-field">
+      <span class="filter-label">
+        From
+      </span>
+
+      <input
+        type="date"
+        [value]="fromDate()"
+        (change)="updateFromDate($event)"
+      />
+    </label>
+
+    <label class="history-filter-field">
+      <span class="filter-label">
+        To
+      </span>
+
+      <input
+        type="date"
+        [value]="toDate()"
+        (change)="updateToDate($event)"
+      />
+    </label>
+
+    <button
+      type="button"
+      class="clear-history-button"
+      (click)="clearFilters()"
+    >
+      Clear
+    </button>
+  </section>
+
+  @if (loading()) {
+    <section class="history-state card">
+      Loading your history...
+    </section>
+  } @else if (loadError()) {
+    <section class="history-state error card">
+      Could not load your work history.
+      Check that the local backend is running.
+    </section>
+  } @else {
+    <section class="history-summary-grid">
+      <article class="history-summary-card card">
+        <span>
+          Weeks
+        </span>
+
+        <strong>
+          {{ totalWeeks() }}
+        </strong>
+
+        <small>
+          in this view
+        </small>
+      </article>
+
+      <article class="history-summary-card card">
+        <span>
+          Quests
+        </span>
+
+        <strong>
+          {{ totalQuests() }}
+        </strong>
+
+        <small>
+          matching history
+        </small>
+      </article>
+
+      <article class="history-summary-card card completed">
+        <span>
+          Completed
+        </span>
+
+        <strong>
+          {{ completedQuests() }}
+        </strong>
+
+        <small>
+          finished quests
+        </small>
+      </article>
+
+      <article class="history-summary-card card completion">
+        <span>
+          Completion
+        </span>
+
+        <strong>
+          {{ overallCompletionRate() }}%
+        </strong>
+
+        <small>
+          across this view
+        </small>
+      </article>
+    </section>
+
+    @if (tasks().length === 0) {
+      <section class="history-empty card">
+        <span class="history-empty-icon">
+          ☾
+        </span>
+
+        <strong>
+          No history yet
+        </strong>
+
+        <p>
+          Your completed and ongoing work will begin
+          appearing here as you log quests.
+        </p>
+      </section>
+    } @else if (filteredTasks().length === 0) {
+      <section class="history-empty card">
+        <span class="history-empty-icon">
+          ☾
+        </span>
+
+        <strong>
+          No matching history
+        </strong>
+
+        <p>
+          Try changing your search or date range.
+        </p>
+      </section>
+    } @else {
+      <section class="history-timeline">
+        @for (
+          week of historyWeeks();
+          track week.key
+          ) {
+          <article class="history-week card">
+            <button
+              type="button"
+              class="history-week-header"
+              [attr.aria-expanded]="isWeekExpanded(week.key)"
+              (click)="toggleWeek(week.key)"
+            >
+              <div class="history-week-title">
+                <span class="section-kicker">
+                  WEEK
+                </span>
+
+                <h2>
+                  {{
+                    formatWeekRange(
+                      week.weekStart,
+                      week.weekEnd
+                    )
+                  }}
+                </h2>
+              </div>
+
+              <div class="history-week-header-meta">
+                <span class="history-week-total">
+                  {{ week.total }}
+                  {{
+                    week.total === 1
+                      ? 'quest'
+                      : 'quests'
+                  }}
+                </span>
+
+                <strong>
+                  {{ week.completionRate }}%
+                </strong>
+
+                <span class="week-chevron">
+                  {{
+                    isWeekExpanded(week.key)
+                      ? '⌄'
+                      : '›'
+                  }}
+                </span>
+              </div>
+            </button>
+
+            @if (isWeekExpanded(week.key)) {
+              <div class="history-week-body">
+                <div class="history-week-overview">
+                  <div class="history-week-stats">
+                    <span class="week-stat completed">
+                      {{ week.completed }}
+                      completed
+                    </span>
+
+                    <span class="week-stat active">
+                      {{ week.inProgress }}
+                      in progress
+                    </span>
+
+                    <span class="week-stat blocked">
+                      {{ week.blocked }}
+                      blocked
+                    </span>
+                  </div>
+
+                  <div class="history-week-progress">
+                    <div class="history-progress-label">
+                      <span>
+                        Weekly completion
+                      </span>
+
+                      <strong>
+                        {{ week.completionRate }}%
+                      </strong>
+                    </div>
+
+                    <div class="progress-track">
+                      <div
+                        class="progress-fill"
+                        [style.width.%]="week.completionRate"
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="history-status-groups">
+                  @for (
+                    group of week.groups;
+                    track group.status
+                    ) {
+                    <section
+                      class="history-status-group"
+                      [class.completed]="
+                        group.status === 'COMPLETED'
+                      "
+                      [class.in-progress]="
+                        group.status === 'IN_PROGRESS'
+                      "
+                      [class.blocked]="
+                        group.status === 'BLOCKED'
+                      "
+                    >
+                      <button
+                        type="button"
+                        class="status-group-header"
+                        [disabled]="group.tasks.length === 0"
+                        [attr.aria-expanded]="
+                          group.tasks.length > 0 &&
+                          isStatusExpanded(
+                            week.key,
+                            group.status
+                          )
+                        "
+                        (click)="
+                          toggleStatusGroup(
+                            week.key,
+                            group.status
+                          )
+                        "
+                      >
+                        <div class="status-group-title">
+                          <span class="status-indicator">
+                          </span>
+
+                          <span>
+                            {{ group.label }}
+                          </span>
+                        </div>
+
+                        <div class="status-group-meta">
+                          <strong>
+                            {{ group.tasks.length }}
+                          </strong>
+
+                          <span class="status-chevron">
+                            @if (group.tasks.length === 0) {
+                              ›
+                            } @else {
+                              {{
+                                isStatusExpanded(
+                                  week.key,
+                                  group.status
+                                )
+                                  ? '⌄'
+                                  : '›'
+                              }}
+                            }
+                          </span>
+                        </div>
+                      </button>
+
+                      @if (
+                        group.tasks.length > 0 &&
+                        isStatusExpanded(
+                          week.key,
+                          group.status
+                        )
+                        ) {
+                        <div class="history-quest-list">
+                          @for (
+                            task of group.tasks;
+                            track task.id
+                            ) {
+                            <article class="history-quest">
+                              <div class="history-quest-meta">
+                                <span
+                                  class="task-category"
+                                  [class.frontend]="
+                                    task.category === 'FRONTEND'
+                                  "
+                                  [class.backend]="
+                                    task.category === 'BACKEND'
+                                  "
+                                  [class.devops]="
+                                    task.category === 'DEVOPS'
+                                  "
+                                  [class.testing]="
+                                    task.category === 'TESTING'
+                                  "
+                                  [class.meeting]="
+                                    task.category === 'MEETING'
+                                  "
+                                  [class.other]="
+                                    task.category === 'OTHER'
+                                  "
+                                >
+                                  {{
+                                    formatCategory(
+                                      task.category
+                                    )
+                                  }}
+                                </span>
+
+                                <span class="history-quest-date">
+                                  {{
+                                    formatQuestDate(
+                                      task.workDate
+                                    )
+                                  }}
+                                </span>
+                              </div>
+
+                              <h3>
+                                {{ task.title }}
+                              </h3>
+
+                              @if (task.description) {
+                                <p>
+                                  {{ task.description }}
+                                </p>
+                              }
+                            </article>
+                          }
+                        </div>
+                      }
+                    </section>
+                  }
+                </div>
+              </div>
+            }
+          </article>
+        }
+      </section>
+    }
+  }
+</section>

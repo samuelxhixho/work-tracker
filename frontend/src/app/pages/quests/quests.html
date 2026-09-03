@@ -1,0 +1,295 @@
+<section class="quests-page">
+  <header class="page-header">
+    <div>
+      <span class="section-kicker">
+        QUEST LOG
+      </span>
+
+      <h1>
+        All quests
+      </h1>
+
+      <p>
+        Search, filter and review everything you've logged.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="add-task-button"
+      (click)="openTaskForm()"
+    >
+      <span>+</span>
+      New Quest
+    </button>
+  </header>
+
+  <section class="quest-summary-grid">
+    <article class="quest-summary-card card">
+      <span>Showing</span>
+
+      <strong>
+        {{ filteredTasks().length }}
+      </strong>
+    </article>
+
+    <article class="quest-summary-card card">
+      <span>Completed</span>
+
+      <strong>
+        {{ completedCount() }}
+      </strong>
+    </article>
+
+    <article class="quest-summary-card card">
+      <span>In progress</span>
+
+      <strong>
+        {{ activeCount() }}
+      </strong>
+    </article>
+
+    <article class="quest-summary-card card">
+      <span>Blocked</span>
+
+      <strong>
+        {{ blockedCount() }}
+      </strong>
+    </article>
+  </section>
+
+  <section class="quest-filters card">
+    <div class="quest-search">
+      <span class="filter-label">
+        Search
+      </span>
+
+      <input
+        type="search"
+        placeholder="Search quests..."
+        [value]="searchTerm()"
+        (input)="updateSearch($event)"
+      />
+    </div>
+
+    <label class="quest-filter-field">
+      <span class="filter-label">
+        Category
+      </span>
+
+      <select
+        [value]="categoryFilter()"
+        (change)="updateCategory($event)"
+      >
+        <option value="ALL">
+          All categories
+        </option>
+
+        <option value="FRONTEND">
+          Frontend
+        </option>
+
+        <option value="BACKEND">
+          Backend
+        </option>
+
+        <option value="DEVOPS">
+          DevOps
+        </option>
+
+        <option value="TESTING">
+          Testing
+        </option>
+
+        <option value="MEETING">
+          Meeting
+        </option>
+
+        <option value="OTHER">
+          Other
+        </option>
+      </select>
+    </label>
+
+    <label class="quest-filter-field">
+      <span class="filter-label">
+        Status
+      </span>
+
+      <select
+        [value]="statusFilter()"
+        (change)="updateStatus($event)"
+      >
+        <option value="ALL">
+          All statuses
+        </option>
+
+        <option value="IN_PROGRESS">
+          In Progress
+        </option>
+
+        <option value="COMPLETED">
+          Completed
+        </option>
+
+        <option value="BLOCKED">
+          Blocked
+        </option>
+      </select>
+    </label>
+
+    <label class="quest-filter-field">
+      <span class="filter-label">
+        From
+      </span>
+
+      <input
+        type="date"
+        [value]="fromDate()"
+        (change)="updateFromDate($event)"
+      />
+    </label>
+
+    <label class="quest-filter-field">
+      <span class="filter-label">
+        To
+      </span>
+
+      <input
+        type="date"
+        [value]="toDate()"
+        (change)="updateToDate($event)"
+      />
+    </label>
+
+    <button
+      type="button"
+      class="clear-filters-button"
+      (click)="clearFilters()"
+    >
+      Clear
+    </button>
+  </section>
+
+  <section class="all-quests-panel card">
+    <div class="section-heading">
+      <div>
+        <span class="section-kicker">
+          QUESTS
+        </span>
+
+        <h2>
+          {{ filteredTasks().length }}
+          {{
+            filteredTasks().length === 1
+              ? 'quest'
+              : 'quests'
+          }}
+        </h2>
+      </div>
+    </div>
+
+    <div class="all-quests-list">
+      @if (loading()) {
+        <div class="task-state">
+          Loading quests...
+        </div>
+      } @else if (loadError()) {
+        <div class="task-state error">
+          Could not reach the local backend.
+        </div>
+      } @else if (filteredTasks().length === 0) {
+        <div class="quest-empty-state">
+          <span>☾</span>
+
+          <strong>
+            No quests found
+          </strong>
+
+          <p>
+            Try changing your filters or log something new.
+          </p>
+        </div>
+      } @else {
+        @for (task of filteredTasks(); track task.id) {
+          <article class="all-quest-card">
+            <div class="quest-card-main">
+              <div class="quest-card-meta">
+                <span
+                  class="task-category"
+                  [class.frontend]="task.category === 'FRONTEND'"
+                  [class.backend]="task.category === 'BACKEND'"
+                  [class.devops]="task.category === 'DEVOPS'"
+                  [class.testing]="task.category === 'TESTING'"
+                  [class.meeting]="task.category === 'MEETING'"
+                  [class.other]="task.category === 'OTHER'"
+                >
+                  {{ formatCategory(task.category) }}
+                </span>
+
+                <span class="quest-date">
+                  {{ task.workDate }}
+                </span>
+              </div>
+
+              <h3>
+                {{ task.title }}
+              </h3>
+
+              @if (task.description) {
+                <p>
+                  {{ task.description }}
+                </p>
+              }
+            </div>
+
+            <div class="quest-card-side">
+              <div class="task-actions">
+                <span
+                  class="task-status"
+                  [class.completed]="task.status === 'COMPLETED'"
+                  [class.in-progress]="task.status === 'IN_PROGRESS'"
+                  [class.blocked]="task.status === 'BLOCKED'"
+                >
+                  {{ formatStatus(task.status) }}
+                </span>
+
+                <button
+                  type="button"
+                  class="task-edit-button"
+                  (click)="openEditTask(task)"
+                >
+                  Edit
+                </button>
+
+                <button
+                  type="button"
+                  class="task-delete-button"
+                  (click)="openDeleteConfirmation(task)"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </article>
+        }
+      }
+    </div>
+  </section>
+</section>
+
+@if (showTaskForm()) {
+  <app-quest-form
+    [task]="editingTask()"
+    (closed)="closeTaskForm()"
+    (saved)="onTaskSaved()"
+  ></app-quest-form>
+}
+
+@if (taskToDelete(); as task) {
+  <app-delete-confirmation
+    [task]="task"
+    (closed)="closeDeleteConfirmation()"
+    (deleted)="onTaskDeleted()"
+  ></app-delete-confirmation>
+}

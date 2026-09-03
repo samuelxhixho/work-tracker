@@ -1,0 +1,167 @@
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+
+  display: grid;
+  place-items: center;
+
+  padding: 24px;
+
+  background: rgba(3, 8, 13, 0.72);
+  backdrop-filter: blur(10px);
+}
+
+.delete-modal {
+  width: min(100%, 430px);
+  padding: 30px;
+
+  border-radius: 24px;
+
+  text-align: center;
+
+  color: #f2eadf;
+
+  background:
+    radial-gradient(
+      circle at 50% 0%,
+      rgba(181, 98, 86, 0.08),
+      transparent 34%
+    ),
+    #101923;
+
+  border: 1px solid rgba(255, 244, 228, 0.09);
+
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.5);
+
+  h2 {
+    margin: 4px 0 0;
+
+    color: #fff1e2;
+    font-size: 1.45rem;
+  }
+
+  p {
+    margin: 14px 0 0;
+
+    color: #9da7b1;
+    font-size: 0.88rem;
+    line-height: 1.6;
+  }
+
+  strong {
+    color: #f3ded3;
+  }
+}
+
+.section-kicker {
+  display: block;
+  margin: 0 0 10px;
+
+  color: #d59c69;
+
+  font-size: 0.7rem;
+  font-weight: 700;
+
+  letter-spacing: 0.16em;
+}
+
+.delete-icon {
+  width: 48px;
+  height: 48px;
+
+  margin: 0 auto 20px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 16px;
+
+  color: #df9a90;
+  background: rgba(181, 98, 86, 0.1);
+
+  border: 1px solid rgba(181, 98, 86, 0.16);
+
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.delete-warning {
+  color: #c38d85 !important;
+  font-size: 0.76rem !important;
+}
+
+.form-error {
+  margin-top: 14px;
+  padding: 12px 14px;
+
+  border-radius: 12px;
+
+  color: #dc9a91;
+  background: rgba(181, 98, 86, 0.1);
+
+  border: 1px solid rgba(181, 98, 86, 0.16);
+
+  font-size: 0.78rem;
+}
+
+.delete-actions {
+  margin-top: 26px;
+
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.secondary-button,
+.confirm-delete-button {
+  min-height: 44px;
+  padding: 0 17px;
+
+  border-radius: 12px;
+
+  font: inherit;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+}
+
+.secondary-button {
+  color: #a8b1ba;
+
+  border: 1px solid rgba(255, 244, 228, 0.08);
+
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.confirm-delete-button {
+  color: #fff1ed;
+
+  border: 1px solid rgba(196, 104, 92, 0.2);
+
+  background: rgba(181, 98, 86, 0.78);
+
+  &:hover {
+    background: rgba(194, 103, 90, 0.9);
+  }
+}
+
+@media (max-width: 700px) {
+  .modal-backdrop {
+    padding: 14px;
+    align-items: end;
+  }
+
+  .delete-modal {
+    width: 100%;
+
+    padding: 26px 20px;
+
+    border-radius: 24px 24px 16px 16px;
+  }
+}

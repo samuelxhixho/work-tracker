@@ -1,0 +1,337 @@
+<header class="topbar">
+  <div>
+    <p class="eyebrow">
+      {{ formattedDateTime() }}
+    </p>
+
+    <h1>
+      {{ dashboardGreeting() }}
+    </h1>
+
+    <p class="subtitle">
+      Another quiet moment to keep track of your progress.
+    </p>
+  </div>
+
+  <button
+    (click)="openTaskForm()"
+    class="add-task-button"
+    type="button"
+  >
+    <span>+</span>
+    New Quest
+  </button>
+</header>
+
+<section class="hero-grid">
+  <div class="hero-copy card">
+    <span class="section-kicker">
+      CURRENT WEEK
+    </span>
+
+    <h2>
+      {{ heroTitle() }}
+    </h2>
+
+    <p>
+      {{ heroBody() }}
+    </p>
+
+    <div class="hero-stats">
+      <article class="hero-stat">
+        <span>
+          Total
+        </span>
+
+        <strong>
+          {{ totalTasks() }}
+        </strong>
+      </article>
+
+      <article class="hero-stat">
+        <span>
+          Completed
+        </span>
+
+        <strong>
+          {{ completedTasks() }}
+        </strong>
+      </article>
+
+      <article class="hero-stat">
+        <span>
+          Active
+        </span>
+
+        <strong>
+          {{ inProgressTasks() }}
+        </strong>
+      </article>
+
+      <article class="hero-stat">
+        <span>
+          Blocked
+        </span>
+
+        <strong>
+          {{ blockedTasks() }}
+        </strong>
+      </article>
+    </div>
+  </div>
+
+  <div class="scene-card card">
+    <img
+      alt="Nighttime coding workspace"
+      class="dashboard-scene-image"
+      src="/images/dashboard-night.jpg"
+    />
+
+    <div class="dashboard-scene-overlay"></div>
+
+    <div class="dashboard-scene-caption">
+    <span class="section-kicker">
+      {{ sceneKicker() }}
+    </span>
+
+      <strong>
+        {{ sceneCaption() }}
+      </strong>
+    </div>
+  </div>
+</section>
+
+<section class="stats-grid">
+  <article class="stat-card card">
+    <span class="stat-label">
+      Total quests
+    </span>
+
+    <strong>
+      {{ totalTasks() }}
+    </strong>
+
+    <span class="stat-note">
+      logged this week
+    </span>
+  </article>
+
+  <article class="stat-card card">
+    <span class="stat-label">
+      Completed
+    </span>
+
+    <strong>
+      {{ completedTasks() }}
+    </strong>
+
+    <span class="stat-note success">
+      Steady pace
+    </span>
+  </article>
+
+  <article class="stat-card card">
+    <span class="stat-label">
+      In progress
+    </span>
+
+    <strong>
+      {{ inProgressTasks() }}
+    </strong>
+
+    <span class="stat-note progress">
+      Still moving
+    </span>
+  </article>
+
+  <article class="stat-card card">
+    <span class="stat-label">
+      Blocked
+    </span>
+
+    <strong>
+      {{ blockedTasks() }}
+    </strong>
+
+    <span class="stat-note blocked">
+      Needs attention
+    </span>
+  </article>
+</section>
+
+<section class="content-grid">
+  <div class="task-panel card">
+    <div class="section-heading">
+      <div>
+        <span class="section-kicker">
+          WEEKLY QUESTS
+        </span>
+
+        <h2>
+          Recent activity
+        </h2>
+      </div>
+
+      <a
+        class="ghost-button"
+        routerLink="/quests"
+      >
+        View all
+      </a>
+    </div>
+
+    <div class="task-list">
+      @if (loadingTasks()) {
+        <div class="task-state">
+          Loading this week's quests...
+        </div>
+      } @else if (taskLoadError()) {
+        <div class="task-state error">
+          Could not reach the local backend.
+        </div>
+      } @else if (tasks().length === 0) {
+        <div class="task-state">
+          No quests logged this week yet.
+        </div>
+      } @else {
+        @for (task of tasks();
+          track task.id) {
+          <article class="task-card">
+            <div
+              [class.backend]="
+                task.category === 'BACKEND'
+              "
+              [class.devops]="
+                task.category === 'DEVOPS'
+              "
+              [class.frontend]="
+                task.category === 'FRONTEND'
+              "
+              [class.meeting]="
+                task.category === 'MEETING'
+              "
+              [class.other]="
+                task.category === 'OTHER'
+              "
+              [class.testing]="
+                task.category === 'TESTING'
+              "
+              class="task-category"
+            >
+              {{
+                formatCategory(
+                  task.category
+                )
+              }}
+            </div>
+
+            <div class="task-body">
+              <h3>
+                {{ task.title }}
+              </h3>
+
+              @if (task.description) {
+                <p>
+                  {{ task.description }}
+                </p>
+              }
+            </div>
+
+            <div class="task-actions">
+              <span
+                [class.blocked]="
+                  task.status === 'BLOCKED'
+                "
+                [class.completed]="
+                  task.status === 'COMPLETED'
+                "
+                [class.in-progress]="
+                  task.status === 'IN_PROGRESS'
+                "
+                class="task-status"
+              >
+                {{
+                  formatStatus(
+                    task.status
+                  )
+                }}
+              </span>
+
+              <button
+                (click)="openEditTask(task)"
+                class="task-edit-button"
+                type="button"
+              >
+                Edit
+              </button>
+
+              <button
+                (click)="
+                  openDeleteConfirmation(task)
+                "
+                class="task-delete-button"
+                type="button"
+              >
+                Delete
+              </button>
+            </div>
+          </article>
+        }
+      }
+    </div>
+  </div>
+
+  <aside class="focus-panel card">
+    <span class="section-kicker">
+      {{ focusKicker() }}
+    </span>
+
+    <h2>
+      Keep it calm. Keep it clear.
+    </h2>
+
+    <p>
+      Log what you finished, what is still in progress, and what is
+      currently blocked. Clear notes make weekly reports easy.
+    </p>
+
+    <div class="focus-progress">
+      <div class="focus-progress-header">
+        <span>
+          Weekly progress
+        </span>
+
+        <strong>
+          {{ weeklyProgress() }}%
+        </strong>
+      </div>
+
+      <div class="progress-track">
+        <div
+          [style.width.%]="weeklyProgress()"
+          class="progress-fill"
+        ></div>
+      </div>
+    </div>
+
+    <div class="focus-quote">
+      “{{ focusQuote() }}”
+    </div>
+  </aside>
+</section>
+
+@if (showTaskForm()) {
+  <app-quest-form
+    (closed)="closeTaskForm()"
+    (saved)="onTaskSaved()"
+    [task]="editingTask()"
+  ></app-quest-form>
+}
+
+@if (taskToDelete(); as task) {
+  <app-delete-confirmation
+    (closed)="closeDeleteConfirmation()"
+    (deleted)="onTaskDeleted()"
+    [task]="task"
+  ></app-delete-confirmation>
+}

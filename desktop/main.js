@@ -1,0 +1,403 @@
+const {
+    app,
+    BrowserWindow,
+    dialog
+} = require('electron');
+
+const {
+    spawn
+} = require('child_process');
+
+const fs = require('fs');
+const http = require('http');
+const net = require('net');
+const path = require('path');
+
+const workTrackerUserDataPath =
+    path.join(
+        app.getPath('appData'),
+        'WorkTracker'
+    );
+
+app.setPath(
+    'userData',
+    workTrackerUserDataPath
+);
+
+let mainWindow = null;
+let backendProcess = null;
+let backendPort = null;
+
+const gotSingleInstanceLock =
+    app.requestSingleInstanceLock();
+
+if (!gotSingleInstanceLock) {
+    app.quit();
+} else {
+    app.on('second-instance', () => {
+        if (!mainWindow) {
+            return;
+        }
+
+        if (mainWindow.isMinimized()) {
+            mainWindow.restore();
+        }
+
+        mainWindow.focus();
+    });
+}
+
+function findAvailablePort(
+    startPort = 47831
+) {
+    return new Promise((resolve, reject) => {
+        const server = net.createServer();
+
+        server.unref();
+
+        server.on('error', error => {
+            if (error.code === 'EADDRINUSE') {
+                resolve(
+                    findAvailablePort(startPort + 1)
+                );
+
+                return;
+            }
+
+            reject(error);
+        });
+
+        server.listen(
+            startPort,
+            '127.0.0.1',
+            () => {
+                const port =
+                    server.address().port;
+
+                server.close(() => {
+                    resolve(port);
+                });
+            }
+        );
+    });
+}
+
+function getJarPath() {
+    if (app.isPackaged) {
+        return path.join(
+            process.resourcesPath,
+            'backend',
+            'backend-0.0.1-SNAPSHOT.jar'
+        );
+    }
+
+    return path.resolve(
+        __dirname,
+        '..',
+        'backend',
+        'target',
+        'backend-0.0.1-SNAPSHOT.jar'
+    );
+}
+
+function getJavaExecutable() {
+    if (app.isPackaged) {
+        return path.join(
+            process.resourcesPath,
+            'runtime',
+            'bin',
+            'javaw.exe'
+        );
+    }
+
+    return path.join(
+        __dirname,
+        'runtime',
+        'bin',
+        'java.exe'
+    );
+}
+
+function startBackend(port) {
+    const jarPath = getJarPath();
+
+    if (!fs.existsSync(jarPath)) {
+        throw new Error(
+            `Spring Boot JAR not found:\n${jarPath}`
+        );
+    }
+
+    const userDataDirectory =
+        app.getPath('userData');
+
+    const dataDirectory =
+        path.join(
+            userDataDirectory,
+            'data'
+        );
+
+    const logsDirectory =
+        path.join(
+            userDataDirectory,
+            'logs'
+        );
+
+    fs.mkdirSync(
+        dataDirectory,
+        {
+            recursive: true
+        }
+    );
+
+    fs.mkdirSync(
+        logsDirectory,
+        {
+            recursive: true
+        }
+    );
+
+    const databasePath =
+        path.join(
+            dataDirectory,
+            'worktracker'
+        )
+            .replace(/\\/g, '/');
+
+    const logPath =
+        path.join(
+            logsDirectory,
+            'worktracker.log'
+        )
+            .replace(/\\/g, '/');
+
+    const javaExecutable =
+        getJavaExecutable();
+
+    const args = [
+        '-jar',
+        jarPath,
+
+        '--server.address=127.0.0.1',
+
+        `--server.port=${port}`,
+
+        `--spring.datasource.url=jdbc:h2:file:${databasePath}`,
+
+        '--spring.h2.console.enabled=false',
+
+        `--logging.file.name=${logPath}`
+    ];
+
+    backendProcess = spawn(
+        javaExecutable,
+        args,
+        {
+            windowsHide: true,
+            stdio: 'ignore'
+        }
+    );
+
+    backendProcess.on(
+        'error',
+        error => {
+            console.error(
+                'Backend process failed:',
+                error
+            );
+        }
+    );
+
+    backendProcess.on(
+        'exit',
+        code => {
+            backendProcess = null;
+
+            if (
+                !app.isQuitting &&
+                code !== 0
+            ) {
+                console.error(
+                    `Backend exited with code ${code}`
+                );
+            }
+        }
+    );
+}
+
+function waitForBackend(
+    port,
+    attempts = 60
+) {
+    return new Promise(
+        (resolve, reject) => {
+            let remainingAttempts =
+                attempts;
+
+            const check = () => {
+                const request = http.get(
+                    {
+                        hostname: '127.0.0.1',
+                        port,
+                        path: '/',
+                        timeout: 1000
+                    },
+                    response => {
+                        response.resume();
+
+                        if (
+                            response.statusCode &&
+                            response.statusCode < 500
+                        ) {
+                            resolve();
+                            return;
+                        }
+
+                        retry();
+                    }
+                );
+
+                request.on(
+                    'error',
+                    retry
+                );
+
+                request.on(
+                    'timeout',
+                    () => {
+                        request.destroy();
+                        retry();
+                    }
+                );
+            };
+
+            const retry = () => {
+                remainingAttempts--;
+
+                if (
+                    remainingAttempts <= 0
+                ) {
+                    reject(
+                        new Error(
+                            'WorkTracker backend did not start in time.'
+                        )
+                    );
+
+                    return;
+                }
+
+                setTimeout(
+                    check,
+                    500
+                );
+            };
+
+            check();
+        }
+    );
+}
+
+function createWindow(port) {
+    mainWindow =
+        new BrowserWindow({
+            width: 1440,
+            height: 900,
+
+            minWidth: 900,
+            minHeight: 650,
+
+            title: 'WorkTracker',
+
+            icon: path.join(
+                __dirname,
+                'build',
+                'icon.png'
+            ),
+
+            backgroundColor: '#09111a',
+
+            autoHideMenuBar: true,
+
+            show: false,
+
+            webPreferences: {
+                contextIsolation: true,
+                nodeIntegration: false,
+                sandbox: true
+            }
+        });
+
+    mainWindow.once(
+        'ready-to-show',
+        () => {
+            mainWindow.show();
+        }
+    );
+
+    mainWindow.loadURL(
+        `http://127.0.0.1:${port}`
+    );
+
+    mainWindow.on(
+        'closed',
+        () => {
+            mainWindow = null;
+        }
+    );
+}
+
+function stopBackend() {
+    if (!backendProcess) {
+        return;
+    }
+
+    backendProcess.kill();
+    backendProcess = null;
+}
+
+app.whenReady().then(
+    async () => {
+        try {
+            backendPort =
+                await findAvailablePort();
+
+            startBackend(
+                backendPort
+            );
+
+            await waitForBackend(
+                backendPort
+            );
+
+            createWindow(
+                backendPort
+            );
+        } catch (error) {
+            console.error(error);
+
+            dialog.showErrorBox(
+                'WorkTracker could not start',
+                error instanceof Error
+                    ? error.message
+                    : String(error)
+            );
+
+            app.quit();
+        }
+    }
+);
+
+app.on(
+    'before-quit',
+    () => {
+        app.isQuitting = true;
+
+        stopBackend();
+    }
+);
+
+app.on(
+    'window-all-closed',
+    () => {
+        app.quit();
+    }
+);

@@ -1,0 +1,49 @@
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Angular / Node
+node_modules/
+dist/
+.angular/
+coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Spring Boot / Maven
+target/
+.mvn/timing.properties
+
+# Local databases
+data/
+*.mv.db
+*.trace.db
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Electron build output
+desktop/release/
+
+# Temporary Java runtimes
+desktop/runtime-bad/
+desktop/runtime-full/
+desktop/runtime-next/
+desktop/runtime-min/
+# Generated Spring Boot frontend bundle
+backend/src/main/resources/static/
+
+# Generated Java runtime
+desktop/runtime/
