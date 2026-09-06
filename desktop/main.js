@@ -32,6 +32,7 @@ app.setPath(
     workTrackerUserDataPath
 );
 
+let splashWindow = null;
 let mainWindow = null;
 let backendProcess = null;
 let backendPort = null;
@@ -305,6 +306,58 @@ function waitForBackend(
     );
 }
 
+function createSplashWindow() {
+    splashWindow =
+        new BrowserWindow({
+            width: 420,
+            height: 260,
+
+            icon: path.join(
+                __dirname,
+                'build',
+                'icon.png'
+            ),
+
+            resizable: false,
+            frame: false,
+
+            backgroundColor: '#0b1520',
+
+            show: false,
+
+            webPreferences: {
+                contextIsolation: true,
+                nodeIntegration: false,
+                sandbox: true
+            }
+        });
+
+    splashWindow.once(
+        'ready-to-show',
+        () => {
+            logStartupStep('Splash ready to show');
+
+            splashWindow.show();
+
+            logStartupStep('Splash shown');
+        }
+    );
+
+    splashWindow.loadFile(
+        path.join(
+            __dirname,
+            'splash.html'
+        )
+    );
+
+    splashWindow.on(
+        'closed',
+        () => {
+            splashWindow = null;
+        }
+    );
+}
+
 function createWindow(port) {
     mainWindow =
         new BrowserWindow({
@@ -339,7 +392,13 @@ function createWindow(port) {
         'ready-to-show',
         () => {
             logStartupStep('Window ready to show');
+
+            if (splashWindow) {
+                splashWindow.close();
+            }
+
             mainWindow.show();
+
             logStartupStep('Window shown');
         }
     );
@@ -368,6 +427,9 @@ function stopBackend() {
 app.whenReady().then(
     async () => {
         logStartupStep('Electron app ready');
+
+        createSplashWindow();
+
         try {
             backendPort =
                 await findAvailablePort();

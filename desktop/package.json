@@ -25,6 +25,7 @@
     },
     "files": [
       "main.js",
+      "splash.html",
       "package.json",
       "build/icon.png"
     ],
