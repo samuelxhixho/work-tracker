@@ -30,8 +30,8 @@
     ],
     "extraResources": [
       {
-        "from": "../backend/target/backend-0.0.1-SNAPSHOT.jar",
-        "to": "backend/backend-0.0.1-SNAPSHOT.jar"
+        "from": "../backend/target/extracted",
+        "to": "backend"
       },
       {
         "from": "runtime",

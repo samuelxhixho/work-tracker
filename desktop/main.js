@@ -13,6 +13,14 @@ const http = require('http');
 const net = require('net');
 const path = require('path');
 
+const startupStartedAt = Date.now();
+
+function logStartupStep(step) {
+    console.log(
+        `[Startup] ${step}: ${Date.now() - startupStartedAt} ms`
+    );
+}
+
 const workTrackerUserDataPath =
     path.join(
         app.getPath('appData'),
@@ -96,6 +104,7 @@ function getJarPath() {
         '..',
         'backend',
         'target',
+        'extracted',
         'backend-0.0.1-SNAPSHOT.jar'
     );
 }
@@ -287,7 +296,7 @@ function waitForBackend(
 
                 setTimeout(
                     check,
-                    500
+                    100
                 );
             };
 
@@ -329,12 +338,14 @@ function createWindow(port) {
     mainWindow.once(
         'ready-to-show',
         () => {
+            logStartupStep('Window ready to show');
             mainWindow.show();
+            logStartupStep('Window shown');
         }
     );
 
     mainWindow.loadURL(
-        `http://127.0.0.1:${port}`
+        `http://127.0.0.1:${port}/?startup=${Date.now()}`
     );
 
     mainWindow.on(
@@ -356,21 +367,30 @@ function stopBackend() {
 
 app.whenReady().then(
     async () => {
+        logStartupStep('Electron app ready');
         try {
             backendPort =
                 await findAvailablePort();
+
+            logStartupStep('Port found');
 
             startBackend(
                 backendPort
             );
 
+            logStartupStep('Backend process launched');
+
             await waitForBackend(
                 backendPort
             );
 
+            logStartupStep('Backend reachable');
+
             createWindow(
                 backendPort
             );
+
+            logStartupStep('Window created');
         } catch (error) {
             console.error(error);
 
