@@ -22,6 +22,26 @@ public class TaskService {
 
     @Transactional
     public TaskResponse create(CreateTaskRequest request) {
+        Task task = createTaskEntity(request);
+
+        Task savedTask = taskRepository.save(task);
+
+        return toResponse(savedTask);
+    }
+
+    @Transactional
+    public List<TaskResponse> createBatch(List<CreateTaskRequest> requests) {
+        List<Task> tasks = requests.stream()
+                .map(this::createTaskEntity)
+                .toList();
+
+        return taskRepository.saveAll(tasks)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    private Task createTaskEntity(CreateTaskRequest request) {
         Task task = new Task();
 
         task.setTitle(request.title());
@@ -30,9 +50,7 @@ public class TaskService {
         task.setStatus(request.status());
         task.setWorkDate(request.workDate());
 
-        Task savedTask = taskRepository.save(task);
-
-        return toResponse(savedTask);
+        return task;
     }
 
     @Transactional(readOnly = true)

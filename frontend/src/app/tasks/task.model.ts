@@ -30,6 +30,10 @@ export interface CreateTaskRequest {
   workDate: string;
 }
 
+export interface BatchCreateTasksRequest {
+  tasks: CreateTaskRequest[];
+}
+
 export interface UpdateTaskRequest {
   title: string;
   description: string | null;

@@ -1,0 +1,383 @@
+<div class="modal-backdrop">
+  <section
+    aria-labelledby="smart-import-title"
+    aria-modal="true"
+    class="smart-import-modal"
+    role="dialog"
+  >
+    <header class="smart-import-header">
+      <div>
+        <span class="section-kicker">
+          SMART IMPORT
+        </span>
+
+        <h2 id="smart-import-title">
+          Import quests
+        </h2>
+
+        <p>
+          Import work from CSV, TXT, or Markdown files.
+        </p>
+      </div>
+
+      <button
+        (click)="close()"
+        aria-label="Close Smart Import"
+        class="modal-close"
+        type="button"
+      >
+        ×
+      </button>
+    </header>
+
+    <div
+      (dragleave)="onDragLeave($event)"
+      (dragover)="onDragOver($event)"
+      (drop)="onDrop($event)"
+      [class.dragging]="isDragging()"
+      class="file-picker"
+    >
+      <span class="file-picker-title">
+        Choose a file
+      </span>
+
+      <p>
+        Supported formats: .csv, .txt, .md — choose or drag a file here
+      </p>
+
+      <input
+        (change)="onFileSelected($event)"
+        [disabled]="parsing()"
+        accept=".csv,.txt,.md"
+        type="file"
+      />
+    </div>
+
+    @if (parsing()) {
+      <div
+        class="import-state"
+        role="status"
+      >
+        Reading and validating file...
+      </div>
+    }
+
+    @if (parseError()) {
+      <div
+        class="import-state error"
+        role="alert"
+      >
+        {{ parseError() }}
+      </div>
+    }
+
+    @if (preview(); as currentPreview) {
+      <section class="import-summary">
+        <div class="import-file">
+          <span>File</span>
+          <strong>
+            {{ currentPreview.fileName }}
+          </strong>
+        </div>
+
+        <div class="import-stats">
+          <article>
+            <span>Rows found</span>
+            <strong>
+              {{ currentPreview.rows.length }}
+            </strong>
+          </article>
+
+          <article>
+            <span>Ready</span>
+            <strong>
+              {{
+                currentPreview.rows.length -
+                invalidRowCount()
+              }}
+            </strong>
+          </article>
+
+          <article>
+            <span>Need attention</span>
+            <strong>
+              {{ invalidRowCount() }}
+            </strong>
+          </article>
+        </div>
+      </section>
+
+      <section
+        #previewStart
+        class="preview-section"
+      >
+        <header class="preview-heading">
+          <div>
+        <span class="section-kicker">
+          PREVIEW
+        </span>
+
+            <h3>
+              Review imported quests
+            </h3>
+
+            <p>
+              {{ selectedRowCount() }}
+              of
+              {{ currentPreview.rows.length }}
+              selected
+            </p>
+          </div>
+
+          <label class="select-all">
+            <input
+              (change)="toggleAllRows()"
+              [checked]="allRowsSelected()"
+              type="checkbox"
+            />
+
+            <span>
+          Select all
+        </span>
+          </label>
+        </header>
+
+        <div class="preview-list">
+          @for (row of visibleRows();
+            track row.id) {
+            <article
+              [class.invalid]="row.issues.length > 0"
+              [class.unselected]="!row.selected"
+              class="preview-row"
+            >
+              <header class="preview-row-header">
+                <label class="row-selection">
+                  <input
+                    (change)="toggleRow(row.id)"
+                    [checked]="row.selected"
+                    type="checkbox"
+                  />
+
+                  <span>
+                Line {{ row.sourceLine }}
+              </span>
+                </label>
+
+                @if (row.issues.length === 0) {
+                  <span class="row-valid">
+                Ready
+              </span>
+                } @else {
+                  <span class="row-invalid">
+                Needs attention
+              </span>
+                }
+              </header>
+
+              <div class="preview-fields">
+                <label class="preview-field title-field">
+                  <span>Title</span>
+
+                  <input
+                    (input)="updateTitle(
+                  row.id,
+                  $event
+                )"
+                    [value]="row.title"
+                    maxlength="200"
+                    type="text"
+                  />
+                </label>
+
+                <label class="preview-field description-field">
+                  <span>Description</span>
+
+                  <textarea
+                    (input)="updateDescription(
+                  row.id,
+                  $event
+                )"
+                    [value]="row.description"
+                    rows="2"
+                  ></textarea>
+                </label>
+
+                <label class="preview-field">
+                  <span>Category</span>
+
+                  <select
+                    (change)="updateCategory(
+                  row.id,
+                  $event
+                )"
+                    [value]="row.category"
+                  >
+                    <option value="FRONTEND">
+                      Frontend
+                    </option>
+
+                    <option value="BACKEND">
+                      Backend
+                    </option>
+
+                    <option value="DEVOPS">
+                      DevOps
+                    </option>
+
+                    <option value="TESTING">
+                      Testing
+                    </option>
+
+                    <option value="MEETING">
+                      Meeting
+                    </option>
+
+                    <option value="OTHER">
+                      Other
+                    </option>
+                  </select>
+                </label>
+
+                <label class="preview-field">
+                  <span>Status</span>
+
+                  <select
+                    (change)="updateStatus(
+                  row.id,
+                  $event
+                )"
+                    [value]="row.status"
+                  >
+                    <option value="IN_PROGRESS">
+                      In Progress
+                    </option>
+
+                    <option value="COMPLETED">
+                      Completed
+                    </option>
+
+                    <option value="BLOCKED">
+                      Blocked
+                    </option>
+                  </select>
+                </label>
+
+                <label class="preview-field">
+                  <span>Work date</span>
+
+                  <input
+                    (change)="updateWorkDate(
+                  row.id,
+                  $event
+                )"
+                    [value]="row.workDate"
+                    type="date"
+                  />
+                </label>
+              </div>
+
+              @if (row.issues.length > 0) {
+                <div class="row-issues">
+                  @for (issue of row.issues;
+                    track issue.field) {
+                    <span>
+                  {{ issue.message }}
+                </span>
+                  }
+                </div>
+              }
+            </article>
+          }
+        </div>
+        @if (currentPreview.rows.length > pageSize) {
+          <div class="preview-pagination">
+    <span class="pagination-info">
+      Showing
+      {{ firstVisibleRowNumber() }}
+      –
+      {{ lastVisibleRowNumber() }}
+      of
+      {{ currentPreview.rows.length }}
+    </span>
+
+            <div class="pagination-controls">
+              <button
+                (click)="previousPage()"
+                [disabled]="currentPage() === 1"
+                class="pagination-button"
+                type="button"
+              >
+                Previous
+              </button>
+
+              <span class="page-number">
+        Page
+                {{ currentPage() }}
+                of
+                {{ totalPages() }}
+      </span>
+
+              <button
+                (click)="nextPage()"
+                [disabled]="
+          currentPage() === totalPages()
+        "
+                class="pagination-button"
+                type="button"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        }
+      </section>
+    }
+
+    @if (selectedInvalidRowCount() > 0) {
+      <div
+        class="import-state error"
+        role="alert"
+      >
+        Fix or deselect the invalid quests before importing.
+      </div>
+    }
+
+    @if (importError()) {
+      <div
+        class="import-state error"
+        role="alert"
+      >
+        {{ importError() }}
+      </div>
+    }
+
+    <footer class="smart-import-actions">
+      <button
+        (click)="close()"
+        [disabled]="parsing() || importing()"
+        class="secondary-button"
+        type="button"
+      >
+        Cancel
+      </button>
+
+      <button
+        (click)="importSelected()"
+        [disabled]="!canImport()"
+        class="import-button"
+        type="button"
+      >
+        @if (importing()) {
+          Importing...
+        } @else {
+          Import {{ selectedRowCount() }}
+          {{
+            selectedRowCount() === 1
+              ? 'Quest'
+              : 'Quests'
+          }}
+        }
+      </button>
+    </footer>
+  </section>
+</div>

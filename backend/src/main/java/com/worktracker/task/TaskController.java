@@ -1,6 +1,7 @@
 package com.worktracker.task;
 
 import com.worktracker.task.dto.CreateTaskRequest;
+import com.worktracker.task.dto.BatchCreateTasksRequest;
 import com.worktracker.task.dto.TaskResponse;
 import com.worktracker.task.dto.UpdateTaskRequest;
 import jakarta.validation.Valid;
@@ -42,6 +43,14 @@ public class TaskController {
         }
 
         return taskService.getAll();
+    }
+
+    @PostMapping("/batch")
+    @ResponseStatus(HttpStatus.CREATED)
+    public List<TaskResponse> createBatch(
+            @Valid @RequestBody BatchCreateTasksRequest request
+    ) {
+        return taskService.createBatch(request.tasks());
     }
 
     @PutMapping("/{id}")

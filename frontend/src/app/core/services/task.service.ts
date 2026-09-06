@@ -2,7 +2,12 @@ import {inject, Injectable} from '@angular/core';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {Observable} from 'rxjs';
 
-import {CreateTaskRequest, Task, UpdateTaskRequest} from '../../tasks/task.model';
+import {
+  BatchCreateTasksRequest,
+  CreateTaskRequest,
+  Task,
+  UpdateTaskRequest
+} from '../../tasks/task.model';
 
 @Injectable({
   providedIn: 'root'
@@ -26,6 +31,15 @@ export class TaskService {
 
   createTask(request: CreateTaskRequest): Observable<Task> {
     return this.http.post<Task>(this.apiUrl, request);
+  }
+
+  createTasksBatch(
+    request: BatchCreateTasksRequest
+  ): Observable<Task[]> {
+    return this.http.post<Task[]>(
+      `${this.apiUrl}/batch`,
+      request
+    );
   }
 
   updateTask(
