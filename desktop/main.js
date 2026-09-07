@@ -152,6 +152,13 @@ function startBackend(port) {
             'logs'
         );
 
+    const musicDirectory =
+        path.join(
+            userDataDirectory,
+            'media',
+            'music'
+        );
+
     fs.mkdirSync(
         dataDirectory,
         {
@@ -161,6 +168,13 @@ function startBackend(port) {
 
     fs.mkdirSync(
         logsDirectory,
+        {
+            recursive: true
+        }
+    );
+
+    fs.mkdirSync(
+        musicDirectory,
         {
             recursive: true
         }
@@ -180,6 +194,10 @@ function startBackend(port) {
         )
             .replace(/\\/g, '/');
 
+    const musicPath =
+        musicDirectory
+            .replace(/\\/g, '/');
+
     const javaExecutable =
         getJavaExecutable();
 
@@ -195,7 +213,9 @@ function startBackend(port) {
 
         '--spring.h2.console.enabled=false',
 
-        `--logging.file.name=${logPath}`
+        `--logging.file.name=${logPath}`,
+
+        `--worktracker.media.music-directory=${musicPath}`
     ];
 
     backendProcess = spawn(

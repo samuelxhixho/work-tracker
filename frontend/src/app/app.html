@@ -73,6 +73,16 @@
 
       <a
         class="nav-item"
+        routerLink="/chill-room"
+        routerLinkActive="active"
+        ariaCurrentWhenActive="page"
+      >
+        <span class="nav-icon">☾</span>
+        Chill Room
+      </a>
+
+      <a
+        class="nav-item"
         routerLink="/settings"
         routerLinkActive="active"
         ariaCurrentWhenActive="page"
@@ -84,6 +94,12 @@
 
     <div class="sidebar-spacer"></div>
 
+    @if (musicSession.hasTrack()) {
+      @defer (when musicSession.hasTrack()) {
+        <app-music-dock class="sidebar-music" />
+      }
+    }
+
     <div class="sidebar-card">
       <span class="sidebar-card-label">
         Local mode
@@ -94,7 +110,6 @@
       </strong>
     </div>
   </aside>
-
   <main
     class="main-content"
     id="main-content"
@@ -145,6 +160,16 @@
     >
       <span>◷</span>
       <small>History</small>
+    </a>
+
+    <a
+      class="mobile-nav-item"
+      routerLink="/chill-room"
+      routerLinkActive="active"
+      ariaCurrentWhenActive="page"
+    >
+      <span>☾</span>
+      <small>Chill</small>
     </a>
 
     <a

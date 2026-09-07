@@ -59,6 +59,17 @@ export const routes: Routes = [
         )
   },
   {
+    path: 'chill-room',
+    loadComponent: () =>
+      import(
+        './pages/chill-room/chill-room'
+        )
+        .then(
+          component =>
+            component.ChillRoom
+        )
+  },
+  {
     path: '**',
     redirectTo: ''
   }

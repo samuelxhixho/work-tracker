@@ -1,0 +1,414 @@
+<section class="chill-room-page">
+  <header class="chill-header">
+    <div>
+      <span class="section-kicker">
+        CHILL ROOM
+      </span>
+
+      <h1>
+        Take a moment.
+      </h1>
+
+      <p>
+        Step away from the quest log and settle into something quieter.
+      </p>
+    </div>
+
+    <span class="room-status">
+      ☾ Quiet mode
+    </span>
+  </header>
+
+  <section class="chill-layout">
+    <article class="room-scene card">
+      <div class="scene-window">
+        <img
+          alt=""
+          class="scene-artwork"
+          decoding="async"
+          height="724"
+          src="/assets/chill-room/chill-room-attic.webp"
+          width="2172"
+        />
+
+        <svg
+          class="scene-atmosphere"
+          viewBox="0 0 2172 724"
+          preserveAspectRatio="xMidYMid slice"
+          aria-hidden="true"
+          focusable="false"
+        >
+
+          <path
+            class="steam-wisp steam-wisp-one"
+            d="M1741 473 C1729 458 1752 447 1741 430 C1733 417 1744 407 1750 396"
+          />
+
+          <path
+            class="steam-wisp steam-wisp-two"
+            d="M1763 471 C1775 455 1753 445 1765 428 C1774 416 1763 404 1760 394"
+          />
+        </svg>
+
+          <div class="window-copy">
+          <span>
+            WORKTRACKER AFTER HOURS
+          </span>
+
+            <h2>
+              Rain outside. Focus inside.
+            </h2>
+
+            <p>
+              No deadlines in this room.
+            </p>
+          </div>
+        </div>
+
+        <div class="scene-footer">
+          <span class="scene-indicator"></span>
+
+          <span>
+          Your quiet workspace
+        </span>
+        </div>
+    </article>
+
+    <aside class="music-library card">
+      <div class="library-heading">
+        <div>
+          <span class="section-kicker">
+            YOUR MUSIC
+          </span>
+
+          <h2>
+            Library
+          </h2>
+        </div>
+
+        <input
+          #musicFileInput
+          (change)="onMusicSelected($event)"
+          accept=".mp3,.wav,.ogg,.m4a,audio/*"
+          class="music-file-input"
+          type="file"
+        />
+
+        <div class="library-actions">
+          <button
+            (click)="openMusicPicker()"
+            [disabled]="loading() || uploading() || deleting()"
+            class="add-music-button"
+            type="button"
+          >
+            {{ uploading() ? 'Adding...' : '+ Add music' }}
+          </button>
+
+          <button
+            #libraryMenuButton
+            (click)="toggleLibraryMenu(libraryMenuButton)"
+            [attr.aria-expanded]="musicMenuOpen()"
+            [disabled]="!player.track() || loading() || uploading() || deleting()"
+            aria-controls="music-actions-popover"
+            aria-label="Library actions"
+            class="library-actions-button"
+            title="Library actions"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              fill="currentColor"
+              height="18"
+              viewBox="0 0 24 24"
+              width="18"
+            >
+              <circle cx="5" cy="12" r="1.7"/>
+              <circle cx="12" cy="12" r="1.7"/>
+              <circle cx="19" cy="12" r="1.7"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      @if (error()) {
+        <div class="library-error" role="alert">
+          <p>{{ error() }}</p>
+
+          <button
+            (click)="loadTracks()"
+            [disabled]="loading() || uploading()"
+            type="button"
+          >
+            Retry
+          </button>
+        </div>
+      }
+
+      @if (loading()) {
+        <div class="library-empty" role="status">
+          <span class="library-empty-icon">♫</span>
+          <strong>Loading library...</strong>
+        </div>
+      } @else if (tracks().length === 0) {
+        <div class="library-empty">
+          <span class="library-empty-icon">
+            ♫
+          </span>
+
+          <strong>
+            Nothing here yet
+          </strong>
+
+          <p>
+            Add a local audio file to start your library.
+          </p>
+        </div>
+      } @else {
+        <div class="music-track-list">
+          @for (track of tracks(); track track.id) {
+            <button
+              (click)="player.playTrack(track)"
+              (contextmenu)="openTrackMenu($event, track)"
+              [attr.aria-pressed]="player.track()?.id === track.id"
+              [class.active]="player.track()?.id === track.id"
+              [disabled]="deleting()"
+              class="music-track"
+              type="button"
+            >
+              <div class="track-art">
+                ♫
+              </div>
+
+              <div class="track-info">
+                <strong [title]="track.title">
+                  {{ track.title }}
+                </strong>
+
+                <div class="track-meta">
+                  <small>
+                    {{ track.artist || 'Unknown artist' }}
+                  </small>
+
+                  <span class="track-size">
+          {{ formatFileSize(track.fileSizeBytes) }}
+        </span>
+                </div>
+
+                <span
+                  [title]="track.originalFilename"
+                  class="track-filename"
+                >
+        {{ track.originalFilename }}
+      </span>
+              </div>
+            </button>
+          }
+        </div>
+      }
+    </aside>
+  </section>
+
+  <section class="music-player card">
+    <div class="now-playing">
+      <div class="album-placeholder">
+        ♫
+      </div>
+
+      <div class="track-details">
+      <span>
+        NOW PLAYING
+      </span>
+
+        <strong [title]="player.track()?.title || ''">
+          {{ player.track()?.title || 'Nothing playing' }}
+        </strong>
+
+        <small>
+          {{ player.track()?.artist || (player.track() ? 'Unknown artist' : 'Select a track to get started') }}
+        </small>
+      </div>
+    </div>
+
+    <div class="player-center">
+      <div class="player-controls">
+        <button
+          (click)="player.previousTrack()"
+          [disabled]="!player.canGoPrevious()"
+          aria-label="Previous track"
+          type="button"
+        >
+          ◀
+        </button>
+
+        <button
+          (click)="player.togglePlayback()"
+          [attr.aria-label]="player.playing() ? 'Pause' : 'Play'"
+          [disabled]="!player.track()"
+          class="play-button"
+          type="button"
+        >
+          {{ player.playing() ? '⏸' : '▶' }}
+        </button>
+
+        <button
+          (click)="player.nextTrack()"
+          [disabled]="!player.canGoNext()"
+          aria-label="Next track"
+          type="button"
+        >
+          ▶
+        </button>
+      </div>
+
+      <div class="seek-row">
+      <span>
+        {{ formatTime(player.currentTime()) }}
+      </span>
+
+        <input
+          #seekSlider
+          (input)="player.seek(seekSlider.valueAsNumber)"
+          [disabled]="!player.duration()"
+          [max]="player.duration() || 1"
+          [value]="player.currentTime()"
+          aria-label="Seek"
+          min="0"
+          step="0.1"
+          type="range"
+        />
+
+        <span>
+        {{ formatTime(player.duration()) }}
+      </span>
+      </div>
+
+      @if (player.loading()) {
+        <small class="player-status">
+          Loading audio...
+        </small>
+      }
+
+      @if (player.error()) {
+        <small class="player-error" role="alert">
+          {{ player.error() }}
+        </small>
+      }
+    </div>
+
+    <div class="volume-control">
+    <span>
+      ♫
+    </span>
+
+      <input
+        #volumeSlider
+        (input)="player.setVolume(volumeSlider.valueAsNumber)"
+        [value]="player.volume()"
+        aria-label="Volume"
+        max="100"
+        min="0"
+        type="range"
+      />
+    </div>
+  </section>
+
+  <div
+    #musicActionsPopover
+    (toggle)="onMusicMenuToggle()"
+    [style.left.px]="musicMenuPosition().left"
+    [style.top.px]="musicMenuPosition().top"
+    aria-label="Music actions"
+    class="music-actions-popover"
+    id="music-actions-popover"
+    popover="auto"
+  >
+    @if (musicMenuTrack(); as target) {
+      <span
+        [title]="target.title"
+        class="music-menu-track"
+      >
+      {{ target.title }}
+    </span>
+    }
+
+    <button
+      (click)="removeFromMusicMenu()"
+      [disabled]="!musicMenuTrack() || deleting()"
+      autofocus
+      class="music-menu-remove"
+      type="button"
+    >
+      <svg
+        aria-hidden="true"
+        fill="none"
+        height="16"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="1.7"
+        viewBox="0 0 24 24"
+        width="16"
+      >
+        <path d="M3 6h18"/>
+        <path d="M8 6V4h8v2"/>
+        <path d="M19 6l-1 14H6L5 6"/>
+        <path d="M10 10v6"/>
+        <path d="M14 10v6"/>
+      </svg>
+
+      <span>Remove track</span>
+    </button>
+  </div>
+
+  <dialog
+    #removeDialog
+    (cancel)="onRemoveDialogCancel($event)"
+    (close)="onRemoveDialogClosed()"
+    aria-describedby="remove-music-description"
+    aria-labelledby="remove-music-title"
+    class="remove-music-dialog"
+  >
+    <div class="remove-dialog-content">
+    <span class="section-kicker">
+      REMOVE MUSIC
+    </span>
+
+      <h2 id="remove-music-title">
+        Remove this track?
+      </h2>
+
+      <p id="remove-music-description">
+        <strong>{{ trackToRemove()?.title }}</strong>
+        will be removed from your library and its stored audio file
+        will be deleted. This cannot be undone.
+      </p>
+
+      @if (removeError()) {
+        <p class="remove-dialog-error" role="alert">
+          {{ removeError() }}
+        </p>
+      }
+
+      <div class="remove-dialog-actions">
+        <button
+          (click)="closeRemoveConfirmation()"
+          [disabled]="deleting()"
+          autofocus
+          class="remove-dialog-cancel"
+          type="button"
+        >
+          Cancel
+        </button>
+
+        <button
+          (click)="confirmRemoveTrack()"
+          [disabled]="deleting()"
+          class="remove-dialog-confirm"
+          type="button"
+        >
+          {{ deleting() ? 'Removing...' : 'Remove track' }}
+        </button>
+      </div>
+    </div>
+  </dialog>
+</section>
