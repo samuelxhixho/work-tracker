@@ -1,5 +1,6 @@
 import {
   Component,
+  OnDestroy,
   OnInit,
   inject,
   signal
@@ -19,6 +20,10 @@ import {
   UpdateSettingsRequest
 } from '../../settings/settings.model';
 
+import {
+  MascotAnimationService
+} from '../../mascot/services/mascot-animation.service';
+
 @Component({
   selector: 'app-settings',
   standalone: true,
@@ -28,12 +33,17 @@ import {
   templateUrl: './settings.html',
   styleUrl: './settings.scss'
 })
-export class Settings implements OnInit {
+export class Settings implements OnInit, OnDestroy {
   private readonly settingsService =
     inject(SettingsService);
 
   private readonly formBuilder =
     inject(FormBuilder);
+
+  private readonly mascotAnimation =
+    inject(MascotAnimationService);
+
+  private finishSettingsThinking: (() => void) | null = null;
 
   readonly loading =
     signal(true);
@@ -66,6 +76,9 @@ export class Settings implements OnInit {
     });
 
   ngOnInit(): void {
+    this.finishSettingsThinking =
+      this.mascotAnimation.beginThinking();
+
     this.loadSettings();
   }
 
@@ -112,6 +125,7 @@ export class Settings implements OnInit {
 
           this.saving.set(false);
           this.saved.set(true);
+          this.stopThinking();
         },
 
         error: error => {
@@ -156,5 +170,14 @@ export class Settings implements OnInit {
           this.loading.set(false);
         }
       });
+  }
+
+  private stopThinking(): void {
+    this.finishSettingsThinking?.();
+    this.finishSettingsThinking = null;
+  }
+
+  ngOnDestroy(): void {
+    this.stopThinking();
   }
 }
