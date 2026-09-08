@@ -1,0 +1,38 @@
+<div class="mascot-host">
+  <div
+    id="companion-note"
+    class="companion-note"
+    [hidden]="!noteOpen()"
+  >
+    <button
+      type="button"
+      class="note-close"
+      aria-label="Close companion note"
+      (click)="closeNote()"
+    >
+      &times;
+    </button>
+
+    <p>One quest at a time.</p>
+  </div>
+
+  <button
+    type="button"
+    class="mascot-launcher"
+    aria-label="Open companion note"
+    aria-controls="companion-note"
+    [attr.aria-expanded]="noteOpen()"
+    (click)="toggleNote()"
+  >
+    @defer (on idle) {
+      <app-mascot-idle aria-hidden="true" />
+    } @placeholder {
+      <img
+        src="/assets/mascot/worktracker-mascot-static.png"
+        width="408"
+        height="612"
+        alt=""
+      />
+    }
+  </button>
+</div>

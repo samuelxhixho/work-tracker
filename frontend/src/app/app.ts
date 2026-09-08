@@ -11,6 +11,7 @@ import {
 import {inject} from '@angular/core';
 import {MusicDock} from './pages/chill-room/components/music-dock/music-dock';
 import {MusicSessionService} from './pages/chill-room/services/music-session.service';
+import {MascotHost} from './mascot/components/mascot-host/mascot-host';
 
 @Component({
   selector: 'app-root',
@@ -19,7 +20,8 @@ import {MusicSessionService} from './pages/chill-room/services/music-session.ser
     RouterOutlet,
     RouterLink,
     RouterLinkActive,
-    MusicDock
+    MusicDock,
+    MascotHost
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss'

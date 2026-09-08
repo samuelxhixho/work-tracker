@@ -14,7 +14,7 @@
       </p>
     </div>
 
-    <div class="page-header-actions">
+    <div class="page-header-actions" data-companion-avoid>
       <button
         type="button"
         class="import-quests-button"
@@ -254,7 +254,7 @@
             </div>
 
             <div class="quest-card-side">
-              <div class="task-actions">
+              <div class="task-actions" data-companion-avoid>
                 <span
                   class="task-status"
                   [class.completed]="task.status === 'COMPLETED'"
