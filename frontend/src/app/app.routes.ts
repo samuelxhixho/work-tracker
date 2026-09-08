@@ -69,6 +69,14 @@ export const routes: Routes = [
             component.ChillRoom
         )
   },
+
+  {
+    path: 'mascot-preview',
+    loadComponent: () =>
+      import('./pages/mascot-preview/mascot-preview')
+        .then(component => component.MascotPreview)
+  },
+
   {
     path: '**',
     redirectTo: ''

@@ -1,0 +1,15 @@
+<div
+  class="mascot-frame"
+  role="img"
+  aria-label="WorkTracker's cozy night owl mascot"
+>
+  <canvas #canvas aria-hidden="true"></canvas>
+
+  @if (!ready() || error() || reducedMotion()) {
+    <img
+      alt=""
+      class="mascot-fallback"
+      src="/assets/mascot/worktracker-mascot-static.png"
+    />
+  }
+</div>
