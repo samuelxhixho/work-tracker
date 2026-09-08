@@ -34,6 +34,10 @@ import {
 } from '../../../core/services/task.service';
 
 import {
+  MascotAnimationService
+} from '../../../mascot/services/mascot-animation.service';
+
+import {
   firstValueFrom
 } from 'rxjs';
 
@@ -49,6 +53,9 @@ export class SmartImportModalComponent {
 
   private readonly taskService =
     inject(TaskService);
+
+  private readonly mascotAnimation =
+    inject(MascotAnimationService);
 
   readonly closed = output<void>();
 
@@ -474,7 +481,7 @@ export class SmartImportModalComponent {
     ).value;
   }
 
-  importSelected(): void {
+  async importSelected(): Promise<void> {
     if (!this.canImport()) {
       return;
     }
@@ -502,28 +509,30 @@ export class SmartImportModalComponent {
     this.importing.set(true);
     this.importError.set('');
 
-    this.taskService
-      .createTasksBatch({
-        tasks
-      })
-      .subscribe({
-        next: () => {
-          this.importing.set(false);
-          this.imported.emit();
-        },
+    const finishThinking =
+      this.mascotAnimation.beginThinking();
 
-        error: error => {
-          console.error(
-            'Failed to import quests',
-            error
-          );
+    try {
+      await firstValueFrom(
+        this.taskService.createTasksBatch({
+          tasks
+        })
+      );
 
-          this.importing.set(false);
-          this.importError.set(
-            'The quests could not be imported.'
-          );
-        }
-      });
+      this.imported.emit();
+    } catch (error) {
+      console.error(
+        'Failed to import quests',
+        error
+      );
+
+      this.importError.set(
+        'The quests could not be imported.'
+      );
+    } finally {
+      this.importing.set(false);
+      finishThinking();
+    }
   }
 
   onFileSelected(event: Event): void {
