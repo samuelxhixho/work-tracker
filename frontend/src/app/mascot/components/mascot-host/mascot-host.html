@@ -4,9 +4,11 @@
     class="companion-note"
     [hidden]="!noteOpen()"
   >
-    <app-assistant-panel
-      (closed)="closeNote()"
-    />
+    @if (noteOpen()) {
+      <app-assistant-panel
+        (closed)="closeNote()"
+      />
+    }
   </div>
 
   <button

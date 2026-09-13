@@ -1,6 +1,6 @@
 <section
-  class="assistant-card"
   aria-labelledby="assistant-panel-title"
+  class="assistant-card"
 >
   <header class="assistant-header">
     <div>
@@ -14,10 +14,10 @@
     </div>
 
     <button
-      type="button"
-      class="assistant-close"
-      aria-label="Close WorkTracker companion"
       (click)="closed.emit()"
+      aria-label="Close WorkTracker companion"
+      class="assistant-close"
+      type="button"
     >
       &times;
     </button>
@@ -29,35 +29,99 @@
 
   <div class="assistant-actions">
     <button
-      type="button"
-      class="assistant-action"
+      (click)="loadFocus()"
       [disabled]="busy()"
-      (click)="loadToday()"
+      class="assistant-action assistant-action-primary"
+      type="button"
     >
-      <span class="action-title">
-        Today's quests
-      </span>
+    <span class="action-title">
+      What should I focus on?
+    </span>
 
       <span class="action-copy">
-        See what is on your plate today.
-      </span>
+      Find the next thing that needs your attention.
+    </span>
     </button>
 
     <button
-      type="button"
-      class="assistant-action"
+      (click)="loadToday()"
       [disabled]="busy()"
-      (click)="loadWeek()"
+      class="assistant-action"
+      type="button"
     >
-      <span class="action-title">
-        Weekly progress
-      </span>
+    <span class="action-title">
+      Today's quests
+    </span>
 
       <span class="action-copy">
-        Check how this week is moving.
-      </span>
+      See what is on your plate today.
+    </span>
+    </button>
+
+    <button
+      (click)="loadWeek()"
+      [disabled]="busy()"
+      class="assistant-action"
+      type="button"
+    >
+    <span class="action-title">
+      Weekly progress
+    </span>
+
+      <span class="action-copy">
+      Check how this week is moving.
+    </span>
     </button>
   </div>
+
+  @if (activeView() === 'focus') {
+    @if (loadingFocus()) {
+      <div
+        class="assistant-result assistant-result-loading"
+        role="status"
+      >
+        Checking what needs attention...
+      </div>
+    } @else if (focusError()) {
+      <div
+        class="assistant-result assistant-result-error"
+        role="alert"
+      >
+        I couldn't check today's focus.
+
+        <button
+          (click)="loadFocus()"
+          class="result-retry"
+          type="button"
+        >
+          Try again
+        </button>
+      </div>
+    } @else if (focusInsight(); as insight) {
+      <div class="assistant-result focus-result">
+      <span class="focus-kicker">
+        FOCUS
+      </span>
+
+        <strong class="focus-title">
+          {{ insight.title }}
+        </strong>
+
+        <p class="focus-message">
+          {{ insight.message }}
+        </p>
+
+        @if (insight.task) {
+          <span
+            [attr.data-status]="insight.task.status"
+            class="quest-status"
+          >
+          {{ formatStatus(insight.task.status) }}
+        </span>
+        }
+      </div>
+    }
+  }
 
   @if (activeView() === 'today') {
     @if (loadingToday()) {
@@ -75,9 +139,9 @@
         I couldn't load today's quests.
 
         <button
-          type="button"
-          class="result-retry"
           (click)="loadToday()"
+          class="result-retry"
+          type="button"
         >
           Try again
         </button>
@@ -98,18 +162,16 @@
           </div>
 
           <div class="quest-list">
-            @for (
-              task of tasks.slice(0, 3);
-              track task.id
-              ) {
+            @for (task of tasks.slice(0, 3);
+              track task.id) {
               <div class="quest-item">
                 <span class="quest-title">
                   {{ task.title }}
                 </span>
 
                 <span
-                  class="quest-status"
                   [attr.data-status]="task.status"
+                  class="quest-status"
                 >
                   {{ formatStatus(task.status) }}
                 </span>
@@ -143,9 +205,9 @@
         I couldn't load this week's progress.
 
         <button
-          type="button"
-          class="result-retry"
           (click)="loadWeek()"
+          class="result-retry"
+          type="button"
         >
           Try again
         </button>
@@ -188,19 +250,19 @@
   }
 
   <nav
-    class="assistant-navigation"
     aria-label="WorkTracker companion shortcuts"
+    class="assistant-navigation"
   >
     <button
-      type="button"
       (click)="openQuests()"
+      type="button"
     >
       Open Quests
     </button>
 
     <button
-      type="button"
       (click)="openChillRoom()"
+      type="button"
     >
       Chill Room
       <span aria-hidden="true">→</span>
