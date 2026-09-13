@@ -48,56 +48,12 @@
   right: 0;
   bottom: calc(100% + 12px);
 
-  width: min(240px, calc(100vw - 32px));
-  box-sizing: border-box;
-
-  padding: 16px 38px 16px 18px;
-
-  border: 1px solid rgba(255, 244, 228, 0.1);
-  border-radius: 16px;
-
-  background: #152332;
-  color: #f2eadf;
-
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
+  width: min(290px, calc(100vw - 32px));
 
   pointer-events: auto;
 
   &[hidden] {
     display: none;
-  }
-
-  p {
-    margin: 0;
-    font-size: 0.85rem;
-    line-height: 1.5;
-  }
-}
-
-.note-close {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-
-  width: 26px;
-  height: 26px;
-
-  border: 0;
-  border-radius: 8px;
-
-  background: transparent;
-  color: #9ca9b7;
-
-  font-size: 1.1rem;
-  cursor: pointer;
-
-  &:hover {
-    color: #fff3e5;
-    background: rgba(255, 255, 255, 0.06);
-  }
-
-  &:focus-visible {
-    outline: 2px solid #d59c69;
   }
 }
 

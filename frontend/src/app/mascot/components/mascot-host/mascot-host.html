@@ -1,26 +1,19 @@
 <div class="mascot-host">
   <div
-    id="companion-note"
+    id="worktracker-assistant-panel"
     class="companion-note"
     [hidden]="!noteOpen()"
   >
-    <button
-      type="button"
-      class="note-close"
-      aria-label="Close companion note"
-      (click)="closeNote()"
-    >
-      &times;
-    </button>
-
-    <p>One quest at a time.</p>
+    <app-assistant-panel
+      (closed)="closeNote()"
+    />
   </div>
 
   <button
     type="button"
     class="mascot-launcher"
-    aria-label="Open companion note"
-    aria-controls="companion-note"
+    aria-label="Open WorkTracker companion"
+    aria-controls="worktracker-assistant-panel"
     [attr.aria-expanded]="noteOpen()"
     (click)="toggleNote()"
   >

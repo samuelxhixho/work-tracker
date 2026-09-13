@@ -1,0 +1,210 @@
+<section
+  class="assistant-card"
+  aria-labelledby="assistant-panel-title"
+>
+  <header class="assistant-header">
+    <div>
+      <span class="assistant-kicker">
+        WORKTRACKER COMPANION
+      </span>
+
+      <h2 id="assistant-panel-title">
+        One quest at a time.
+      </h2>
+    </div>
+
+    <button
+      type="button"
+      class="assistant-close"
+      aria-label="Close WorkTracker companion"
+      (click)="closed.emit()"
+    >
+      &times;
+    </button>
+  </header>
+
+  <p class="assistant-copy">
+    I can help you review your work and move around WorkTracker.
+  </p>
+
+  <div class="assistant-actions">
+    <button
+      type="button"
+      class="assistant-action"
+      [disabled]="busy()"
+      (click)="loadToday()"
+    >
+      <span class="action-title">
+        Today's quests
+      </span>
+
+      <span class="action-copy">
+        See what is on your plate today.
+      </span>
+    </button>
+
+    <button
+      type="button"
+      class="assistant-action"
+      [disabled]="busy()"
+      (click)="loadWeek()"
+    >
+      <span class="action-title">
+        Weekly progress
+      </span>
+
+      <span class="action-copy">
+        Check how this week is moving.
+      </span>
+    </button>
+  </div>
+
+  @if (activeView() === 'today') {
+    @if (loadingToday()) {
+      <div
+        class="assistant-result assistant-result-loading"
+        role="status"
+      >
+        Checking today's quests...
+      </div>
+    } @else if (todayError()) {
+      <div
+        class="assistant-result assistant-result-error"
+        role="alert"
+      >
+        I couldn't load today's quests.
+
+        <button
+          type="button"
+          class="result-retry"
+          (click)="loadToday()"
+        >
+          Try again
+        </button>
+      </div>
+    } @else if (todayTasks(); as tasks) {
+      <div class="assistant-result">
+        @if (tasks.length === 0) {
+          <p class="empty-result">
+            No quests logged for today.
+          </p>
+        } @else {
+          <div class="result-heading">
+            <strong>
+              {{ tasks.length }}
+              {{ tasks.length === 1 ? 'quest' : 'quests' }}
+              today
+            </strong>
+          </div>
+
+          <div class="quest-list">
+            @for (
+              task of tasks.slice(0, 3);
+              track task.id
+              ) {
+              <div class="quest-item">
+                <span class="quest-title">
+                  {{ task.title }}
+                </span>
+
+                <span
+                  class="quest-status"
+                  [attr.data-status]="task.status"
+                >
+                  {{ formatStatus(task.status) }}
+                </span>
+              </div>
+            }
+          </div>
+
+          @if (tasks.length > 3) {
+            <p class="more-quests">
+              +{{ tasks.length - 3 }} more
+            </p>
+          }
+        }
+      </div>
+    }
+  }
+
+  @if (activeView() === 'week') {
+    @if (loadingWeek()) {
+      <div
+        class="assistant-result assistant-result-loading"
+        role="status"
+      >
+        Checking this week's progress...
+      </div>
+    } @else if (weekError()) {
+      <div
+        class="assistant-result assistant-result-error"
+        role="alert"
+      >
+        I couldn't load this week's progress.
+
+        <button
+          type="button"
+          class="result-retry"
+          (click)="loadWeek()"
+        >
+          Try again
+        </button>
+      </div>
+    } @else if (weeklyReport(); as report) {
+      <div class="assistant-result">
+        <div class="result-heading">
+          <strong>
+            This week
+          </strong>
+
+          <span class="week-range">
+            {{ report.weekStart }} – {{ report.weekEnd }}
+          </span>
+        </div>
+
+        <div class="week-grid">
+          <div class="week-stat">
+            <span>Total</span>
+            <strong>{{ report.totalTasks }}</strong>
+          </div>
+
+          <div class="week-stat">
+            <span>Completed</span>
+            <strong>{{ report.completedTasks }}</strong>
+          </div>
+
+          <div class="week-stat">
+            <span>In progress</span>
+            <strong>{{ report.inProgressTasks }}</strong>
+          </div>
+
+          <div class="week-stat">
+            <span>Blocked</span>
+            <strong>{{ report.blockedTasks }}</strong>
+          </div>
+        </div>
+      </div>
+    }
+  }
+
+  <nav
+    class="assistant-navigation"
+    aria-label="WorkTracker companion shortcuts"
+  >
+    <button
+      type="button"
+      (click)="openQuests()"
+    >
+      Open Quests
+    </button>
+
+    <button
+      type="button"
+      (click)="openChillRoom()"
+    >
+      Chill Room
+      <span aria-hidden="true">→</span>
+    </button>
+  </nav>
+
+</section>

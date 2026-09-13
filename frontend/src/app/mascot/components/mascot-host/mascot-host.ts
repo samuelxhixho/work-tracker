@@ -13,6 +13,10 @@ import {NavigationEnd, Router} from '@angular/router';
 import {filter, Subscription} from 'rxjs';
 import {MascotIdle} from '../mascot-idle/mascot-idle';
 
+import {
+  AssistantPanel
+} from '../../../assistant/components/assistant-panel/assistant-panel';
+
 type Point = {x: number; y: number};
 type Area = {left: number; top: number; right: number; bottom: number};
 
@@ -43,7 +47,10 @@ function isClear(
 @Component({
   selector: 'app-mascot-host',
   standalone: true,
-  imports: [MascotIdle],
+  imports: [
+    MascotIdle,
+    AssistantPanel
+  ],
   templateUrl: './mascot-host.html',
   styleUrl: './mascot-host.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
