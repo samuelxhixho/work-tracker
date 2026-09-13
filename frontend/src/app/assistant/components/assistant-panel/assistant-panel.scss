@@ -7,6 +7,12 @@
   box-sizing: border-box;
   width: 100%;
   padding: 18px;
+  max-height: calc(100vh - 180px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 
   border: 1px solid rgba(255, 244, 228, 0.1);
   border-radius: 16px;
@@ -15,6 +21,10 @@
   color: #f2eadf;
 
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
+}
+
+.assistant-card::-webkit-scrollbar {
+  display: none;
 }
 
 .assistant-header {
@@ -267,8 +277,9 @@ h2 {
 .assistant-navigation {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 8px 12px;
 
   margin-top: 14px;
   padding-top: 12px;

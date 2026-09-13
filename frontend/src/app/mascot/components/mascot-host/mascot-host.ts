@@ -110,9 +110,24 @@ export class MascotHost implements AfterViewInit, OnDestroy {
     });
   };
 
-  private readonly onScroll = (): void => {
+  private readonly onScroll = (
+    event: Event
+  ): void => {
+    const target = event.target;
+
+    if (
+      target instanceof Element &&
+      target.closest(
+        '#worktracker-assistant-panel'
+      )
+    ) {
+      return;
+    }
+
     if (this.noteOpen()) {
-      this.zone.run(() => this.noteOpen.set(false));
+      this.zone.run(
+        () => this.noteOpen.set(false)
+      );
     }
 
     this.schedule();

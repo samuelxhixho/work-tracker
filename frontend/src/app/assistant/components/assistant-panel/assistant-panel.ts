@@ -6,9 +6,8 @@ import {
   output,
   signal
 } from '@angular/core';
-import {firstValueFrom} from 'rxjs';
-
 import {Router} from '@angular/router';
+import {firstValueFrom} from 'rxjs';
 
 import {
   ReportService
@@ -28,14 +27,19 @@ import {
 } from '../../../tasks/task.model';
 
 type AssistantView =
+  | 'summary'
   | 'focus'
+  | 'blocked'
   | 'today'
   | 'week'
   | null;
 
-interface FocusInsight {
+interface AssistantInsight {
   title: string;
   message: string;
+}
+
+interface FocusInsight extends AssistantInsight {
   task: Task | null;
 }
 
@@ -64,13 +68,28 @@ export class AssistantPanel {
   readonly activeView =
     signal<AssistantView>(null);
 
+  readonly loadingSummary =
+    signal(false);
+
+  readonly loadingFocus =
+    signal(false);
+
+  readonly loadingBlocked =
+    signal(false);
+
   readonly loadingToday =
     signal(false);
 
   readonly loadingWeek =
     signal(false);
 
-  readonly loadingFocus =
+  readonly summaryError =
+    signal(false);
+
+  readonly focusError =
+    signal(false);
+
+  readonly blockedError =
     signal(false);
 
   readonly todayError =
@@ -79,8 +98,14 @@ export class AssistantPanel {
   readonly weekError =
     signal(false);
 
-  readonly focusError =
-    signal(false);
+  readonly summaryInsight =
+    signal<AssistantInsight | null>(null);
+
+  readonly focusInsight =
+    signal<FocusInsight | null>(null);
+
+  readonly blockedTasks =
+    signal<Task[] | null>(null);
 
   readonly todayTasks =
     signal<Task[] | null>(null);
@@ -88,14 +113,66 @@ export class AssistantPanel {
   readonly weeklyReport =
     signal<WeeklyReport | null>(null);
 
-  readonly focusInsight =
-    signal<FocusInsight | null>(null);
-
   readonly busy = computed(() =>
+    this.loadingSummary() ||
     this.loadingFocus() ||
+    this.loadingBlocked() ||
     this.loadingToday() ||
     this.loadingWeek()
   );
+
+  async loadSummary(): Promise<void> {
+    if (this.busy()) {
+      return;
+    }
+
+    this.activeView.set('summary');
+    this.loadingSummary.set(true);
+    this.summaryError.set(false);
+
+    const finishThinking =
+      this.mascotAnimation.beginThinking();
+
+    const today =
+      this.getLocalDateKey(new Date());
+
+    try {
+      const [tasks, report] =
+        await Promise.all([
+          firstValueFrom(
+            this.taskService.getTasks(
+              today,
+              today
+            )
+          ),
+          firstValueFrom(
+            this.reportService.getWeeklyReport(
+              today
+            )
+          )
+        ]);
+
+      this.todayTasks.set(tasks);
+      this.weeklyReport.set(report);
+
+      this.summaryInsight.set(
+        this.buildSummaryInsight(
+          tasks,
+          report
+        )
+      );
+    } catch (error) {
+      console.error(
+        'Failed to load companion summary',
+        error
+      );
+
+      this.summaryError.set(true);
+    } finally {
+      this.loadingSummary.set(false);
+      finishThinking();
+    }
+  }
 
   async loadFocus(): Promise<void> {
     if (this.busy()) {
@@ -135,6 +212,51 @@ export class AssistantPanel {
       this.focusError.set(true);
     } finally {
       this.loadingFocus.set(false);
+      finishThinking();
+    }
+  }
+
+  async loadBlocked(): Promise<void> {
+    if (this.busy()) {
+      return;
+    }
+
+    this.activeView.set('blocked');
+    this.loadingBlocked.set(true);
+    this.blockedError.set(false);
+
+    const finishThinking =
+      this.mascotAnimation.beginThinking();
+
+    try {
+      const tasks =
+        await firstValueFrom(
+          this.taskService.getAllTasks()
+        );
+
+      const blocked =
+        tasks
+          .filter(
+            task => task.status === 'BLOCKED'
+          )
+          .sort(
+            (a, b) =>
+              a.workDate.localeCompare(
+                b.workDate
+              ) ||
+              a.id - b.id
+          );
+
+      this.blockedTasks.set(blocked);
+    } catch (error) {
+      console.error(
+        'Failed to load blocked quests',
+        error
+      );
+
+      this.blockedError.set(true);
+    } finally {
+      this.loadingBlocked.set(false);
       finishThinking();
     }
   }
@@ -227,12 +349,99 @@ export class AssistantPanel {
     }
   }
 
-  openQuests(): void {
-    void this.router.navigateByUrl('/quests');
+  formatWeekRange(
+    start: string,
+    end: string
+  ): string {
+    const startDate =
+      this.parseLocalDate(start);
+
+    const endDate =
+      this.parseLocalDate(end);
+
+    const startLabel =
+      startDate.toLocaleDateString(
+        'en-US',
+        {
+          month: 'short',
+          day: 'numeric'
+        }
+      );
+
+    const endLabel =
+      endDate.toLocaleDateString(
+        'en-US',
+        {
+          month: 'short',
+          day: 'numeric'
+        }
+      );
+
+    return `${startLabel} – ${endLabel}`;
   }
 
-  openChillRoom(): void {
-    void this.router.navigateByUrl('/chill-room');
+  navigate(path: string): void {
+    this.closed.emit();
+    void this.router.navigateByUrl(path);
+  }
+
+  private buildSummaryInsight(
+    tasks: Task[],
+    report: WeeklyReport
+  ): AssistantInsight {
+    const completed =
+      tasks.filter(
+        task => task.status === 'COMPLETED'
+      ).length;
+
+    const inProgress =
+      tasks.filter(
+        task => task.status === 'IN_PROGRESS'
+      ).length;
+
+    const blocked =
+      tasks.filter(
+        task => task.status === 'BLOCKED'
+      ).length;
+
+    let title =
+      'Here is your current picture.';
+
+    if (blocked === 1) {
+      title =
+        'One blocker needs attention.';
+    } else if (blocked > 1) {
+      title =
+        `${blocked} blockers need attention.`;
+    } else if (inProgress > 0) {
+      title =
+        'You have work in motion.';
+    } else if (
+      tasks.length > 0 &&
+      completed === tasks.length
+    ) {
+      title =
+        'Today is complete.';
+    } else if (tasks.length === 0) {
+      title =
+        'A quiet day so far.';
+    }
+
+    const todayMessage =
+      tasks.length === 0
+        ? 'No quests are logged for today.'
+        : `Today: ${tasks.length} total, ${completed} completed, ${inProgress} in progress, ${blocked} blocked.`;
+
+    const weekMessage =
+      report.totalTasks === 0
+        ? 'No quests are logged for this week yet.'
+        : `This week: ${report.completedTasks} of ${report.totalTasks} completed.`;
+
+    return {
+      title,
+      message:
+        `${todayMessage} ${weekMessage}`
+    };
   }
 
   private buildFocusInsight(
@@ -240,7 +449,8 @@ export class AssistantPanel {
   ): FocusInsight {
     if (tasks.length === 0) {
       return {
-        title: 'Nothing needs your attention yet.',
+        title:
+          'Nothing needs your attention yet.',
         message:
           'There are no quests logged for today.',
         task: null
@@ -256,7 +466,8 @@ export class AssistantPanel {
       const task = blocked[0];
 
       return {
-        title: 'Unblock this first.',
+        title:
+          'Unblock this first.',
         message:
           blocked.length === 1
             ? `"${task.title}" is blocked. Clear the blocker before adding more work.`
@@ -267,14 +478,16 @@ export class AssistantPanel {
 
     const inProgress =
       tasks.filter(
-        task => task.status === 'IN_PROGRESS'
+        task =>
+          task.status === 'IN_PROGRESS'
       );
 
     if (inProgress.length > 0) {
       const task = inProgress[0];
 
       return {
-        title: 'Finish what is already moving.',
+        title:
+          'Finish what is already moving.',
         message:
           inProgress.length === 1
             ? `Continue "${task.title}" before starting another quest.`
@@ -284,14 +497,32 @@ export class AssistantPanel {
     }
 
     return {
-      title: 'Today is clear.',
+      title:
+        'Today is clear.',
       message:
         'Everything logged for today is complete.',
       task: null
     };
   }
 
-  private getLocalDateKey(date: Date): string {
+  private parseLocalDate(
+    value: string
+  ): Date {
+    const [year, month, day] =
+      value
+        .split('-')
+        .map(Number);
+
+    return new Date(
+      year,
+      month - 1,
+      day
+    );
+  }
+
+  private getLocalDateKey(
+    date: Date
+  ): string {
     const year =
       date.getFullYear();
 

@@ -29,18 +29,48 @@
 
   <div class="assistant-actions">
     <button
-      (click)="loadFocus()"
+      (click)="loadSummary()"
       [disabled]="busy()"
       class="assistant-action assistant-action-primary"
       type="button"
     >
-    <span class="action-title">
-      What should I focus on?
-    </span>
+      <span class="action-title">
+        Quick summary
+      </span>
 
       <span class="action-copy">
-      Find the next thing that needs your attention.
-    </span>
+        Get the current picture at a glance.
+      </span>
+    </button>
+
+    <button
+      (click)="loadFocus()"
+      [disabled]="busy()"
+      class="assistant-action"
+      type="button"
+    >
+      <span class="action-title">
+        What should I focus on?
+      </span>
+
+      <span class="action-copy">
+        Find the next thing that needs your attention.
+      </span>
+    </button>
+
+    <button
+      (click)="loadBlocked()"
+      [disabled]="busy()"
+      class="assistant-action"
+      type="button"
+    >
+      <span class="action-title">
+        Blocked work
+      </span>
+
+      <span class="action-copy">
+        See which quests are currently stuck.
+      </span>
     </button>
 
     <button
@@ -49,13 +79,13 @@
       class="assistant-action"
       type="button"
     >
-    <span class="action-title">
-      Today's quests
-    </span>
+      <span class="action-title">
+        Today's quests
+      </span>
 
       <span class="action-copy">
-      See what is on your plate today.
-    </span>
+        See what is on your plate today.
+      </span>
     </button>
 
     <button
@@ -64,15 +94,55 @@
       class="assistant-action"
       type="button"
     >
-    <span class="action-title">
-      Weekly progress
-    </span>
+      <span class="action-title">
+        Weekly progress
+      </span>
 
       <span class="action-copy">
-      Check how this week is moving.
-    </span>
+        Check how this week is moving.
+      </span>
     </button>
   </div>
+
+  @if (activeView() === 'summary') {
+    @if (loadingSummary()) {
+      <div
+        class="assistant-result assistant-result-loading"
+        role="status"
+      >
+        Putting together your summary...
+      </div>
+    } @else if (summaryError()) {
+      <div
+        class="assistant-result assistant-result-error"
+        role="alert"
+      >
+        I couldn't load your summary.
+
+        <button
+          (click)="loadSummary()"
+          class="result-retry"
+          type="button"
+        >
+          Try again
+        </button>
+      </div>
+    } @else if (summaryInsight(); as insight) {
+      <div class="assistant-result focus-result">
+        <span class="focus-kicker">
+          OVERVIEW
+        </span>
+
+        <strong class="focus-title">
+          {{ insight.title }}
+        </strong>
+
+        <p class="focus-message">
+          {{ insight.message }}
+        </p>
+      </div>
+    }
+  }
 
   @if (activeView() === 'focus') {
     @if (loadingFocus()) {
@@ -99,9 +169,9 @@
       </div>
     } @else if (focusInsight(); as insight) {
       <div class="assistant-result focus-result">
-      <span class="focus-kicker">
-        FOCUS
-      </span>
+        <span class="focus-kicker">
+          FOCUS
+        </span>
 
         <strong class="focus-title">
           {{ insight.title }}
@@ -116,8 +186,75 @@
             [attr.data-status]="insight.task.status"
             class="quest-status"
           >
-          {{ formatStatus(insight.task.status) }}
-        </span>
+            {{ formatStatus(insight.task.status) }}
+          </span>
+        }
+      </div>
+    }
+  }
+
+  @if (activeView() === 'blocked') {
+    @if (loadingBlocked()) {
+      <div
+        class="assistant-result assistant-result-loading"
+        role="status"
+      >
+        Checking blocked quests...
+      </div>
+    } @else if (blockedError()) {
+      <div
+        class="assistant-result assistant-result-error"
+        role="alert"
+      >
+        I couldn't load blocked quests.
+
+        <button
+          (click)="loadBlocked()"
+          class="result-retry"
+          type="button"
+        >
+          Try again
+        </button>
+      </div>
+    } @else if (blockedTasks(); as tasks) {
+      <div class="assistant-result">
+        @if (tasks.length === 0) {
+          <p class="empty-result">
+            No blocked quests right now.
+          </p>
+        } @else {
+          <div class="result-heading">
+            <strong>
+              {{ tasks.length }}
+              {{ tasks.length === 1 ? 'blocked quest' : 'blocked quests' }}
+            </strong>
+          </div>
+
+          <div class="quest-list">
+            @for (
+              task of tasks.slice(0, 3);
+              track task.id
+              ) {
+              <div class="quest-item">
+                <span class="quest-title">
+                  {{ task.title }}
+                </span>
+
+                <span
+                  [attr.data-status]="task.status"
+                  class="quest-status"
+                >
+                  {{ formatStatus(task.status) }}
+                </span>
+              </div>
+            }
+          </div>
+
+          @if (tasks.length > 3) {
+            <p class="more-quests">
+              +{{ tasks.length - 3 }} more
+            </p>
+          }
         }
       </div>
     }
@@ -162,8 +299,10 @@
           </div>
 
           <div class="quest-list">
-            @for (task of tasks.slice(0, 3);
-              track task.id) {
+            @for (
+              task of tasks.slice(0, 3);
+              track task.id
+              ) {
               <div class="quest-item">
                 <span class="quest-title">
                   {{ task.title }}
@@ -220,7 +359,7 @@
           </strong>
 
           <span class="week-range">
-            {{ report.weekStart }} – {{ report.weekEnd }}
+            {{ formatWeekRange(report.weekStart, report.weekEnd) }}
           </span>
         </div>
 
@@ -254,19 +393,39 @@
     class="assistant-navigation"
   >
     <button
-      (click)="openQuests()"
+      (click)="navigate('/quests')"
       type="button"
     >
-      Open Quests
+      Quests
     </button>
 
     <button
-      (click)="openChillRoom()"
+      (click)="navigate('/weekly-log')"
+      type="button"
+    >
+      Weekly Log
+    </button>
+
+    <button
+      (click)="navigate('/history')"
+      type="button"
+    >
+      History
+    </button>
+
+    <button
+      (click)="navigate('/settings')"
+      type="button"
+    >
+      Settings
+    </button>
+
+    <button
+      (click)="navigate('/chill-room')"
       type="button"
     >
       Chill Room
       <span aria-hidden="true">→</span>
     </button>
   </nav>
-
 </section>
