@@ -4,11 +4,16 @@ import {
   computed,
   inject,
   output,
-  signal
+  signal,
+  afterEveryRender,
+  DestroyRef,
+  ElementRef,
+  ViewChild
 } from '@angular/core';
 import {Router} from '@angular/router';
+import {MusicPlayerService} from '../../../pages/chill-room/services/music-player.service';
 import {firstValueFrom} from 'rxjs';
-
+import {HttpErrorResponse} from '@angular/common/http';
 import {
   ReportService
 } from '../../../core/services/report.service';
@@ -25,6 +30,11 @@ import {
   Task,
   TaskStatus
 } from '../../../tasks/task.model';
+import {
+  LocalAiAvailability,
+  LocalAiChatMessage,
+  LocalAiService
+} from '../../services/local-ai.service';
 
 type AssistantView =
   | 'summary'
@@ -51,6 +61,316 @@ interface FocusInsight extends AssistantInsight {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AssistantPanel {
+
+  private readonly localAi = inject(LocalAiService);
+  private readonly musicPlayer = inject(MusicPlayerService);
+
+  readonly companionPage = signal<'home' | 'chat'>('home');
+
+  openChat(): void {
+    if (this.busy()) {
+      return;
+    }
+
+    this.companionPage.set('chat');
+    void this.checkLocalAi();
+  }
+
+  backToHome(): void {
+    this.companionPage.set('home');
+  }
+
+  private readonly destroyRef = inject(DestroyRef);
+
+  @ViewChild('chatThread')
+  private chatThread?: ElementRef<HTMLDivElement>;
+
+  private lastChatElement: HTMLDivElement | null = null;
+  private lastChatMessageCount = -1;
+  private lastChatHeight = -1;
+  private lastChatContentHeight = -1;
+
+  readonly chatDraft = signal('');
+  readonly chatMessages = signal<LocalAiChatMessage[]>([]);
+  readonly chatSending = signal(false);
+  readonly chatCancelling = signal(false);
+  readonly chatError = signal('');
+  readonly chatNotice = signal('');
+
+  private activeChat: {
+    id: string;
+    cancelled: boolean;
+    finishThinking: () => void;
+  } | null = null;
+
+  constructor() {
+    afterEveryRender({
+      earlyRead: () => {
+        const element = this.chatThread?.nativeElement;
+
+        if (!element) {
+          this.lastChatElement = null;
+          return null;
+        }
+
+        const messageCount = this.chatMessages().length;
+        const height = element.clientHeight;
+        const contentHeight = element.scrollHeight;
+
+        const changed =
+          element !== this.lastChatElement ||
+          messageCount !== this.lastChatMessageCount ||
+          height !== this.lastChatHeight ||
+          contentHeight !== this.lastChatContentHeight;
+
+        this.lastChatElement = element;
+        this.lastChatMessageCount = messageCount;
+        this.lastChatHeight = height;
+        this.lastChatContentHeight = contentHeight;
+
+        return changed ? {element, contentHeight} : null;
+      },
+      write: target => {
+        if (target) {
+          target.element.scrollTop = target.contentHeight;
+        }
+      }
+    });
+    this.destroyRef.onDestroy(() => {
+      const request = this.activeChat;
+
+      if (request) {
+        request.cancelled = true;
+        request.finishThinking();
+        void this.cancelOnServer(request.id);
+      }
+    });
+  }
+
+  async sendChat(): Promise<void> {
+    const content = this.chatDraft().trim();
+
+    if (
+      this.busy() ||
+      !content ||
+      content.length > 2000 ||
+      this.aiAvailability()?.status !== 'AVAILABLE'
+    ) {
+      return;
+    }
+
+    const history = [...this.chatMessages()];
+    let shortened = false;
+
+    while (
+      history.length > 0 &&
+      (
+        history.length > 10 ||
+        history.some(message => message.content.length > 2000) ||
+        history.reduce(
+          (total, message) => total + message.content.length,
+          content.length
+        ) > 4000
+      )
+      ) {
+      history.splice(0, 2);
+      shortened = true;
+    }
+
+    const messages: LocalAiChatMessage[] = [
+      ...history,
+      {role: 'user', content}
+    ];
+
+    const request = {
+      id: crypto.randomUUID(),
+      cancelled: false,
+      finishThinking: this.mascotAnimation.beginThinking()
+    };
+
+    this.activeChat = request;
+    this.chatSending.set(true);
+    this.chatCancelling.set(false);
+    this.chatError.set('');
+    this.chatNotice.set(
+      shortened
+        ? 'Older messages are still visible, but only recent messages are included in this reply.'
+        : ''
+    );
+    this.chatMessages.update(current => [
+      ...current,
+      {role: 'user', content}
+    ]);
+    this.chatDraft.set('');
+
+    let completed = false;
+
+    try {
+      const result = await firstValueFrom(
+        this.localAi.chat(
+          request.id,
+          messages,
+          this.router.url.split(/[?#]/)[0],
+          {
+            trackTitle: this.musicPlayer.track()?.title ?? null,
+            artist: this.musicPlayer.track()?.artist ?? null,
+            playing: this.musicPlayer.playing(),
+            loading: this.musicPlayer.loading(),
+            volume: this.musicPlayer.volume(),
+            currentTime: this.musicPlayer.currentTime(),
+            duration: this.musicPlayer.duration()
+          }
+        )
+      );
+
+      if (this.destroyRef.destroyed || request.cancelled) {
+        return;
+      }
+
+      if (typeof result.reply !== 'string' || !result.reply.trim()) {
+        throw new Error('Empty chat reply');
+      }
+
+      this.chatMessages.update(current => [
+        ...current,
+        {role: 'assistant', content: result.reply}
+      ]);
+      completed = true;
+    } catch (error) {
+      if (!this.destroyRef.destroyed && !request.cancelled) {
+        this.chatError.set(this.chatFailureMessage(error));
+      }
+    } finally {
+      request.finishThinking();
+
+      if (!this.destroyRef.destroyed) {
+        if (!completed) {
+          this.chatMessages.update(current => current.slice(0, -1));
+          this.chatDraft.set(content);
+        }
+
+        if (request.cancelled) {
+          this.chatNotice.set('Reply discarded. Your message is back in the input.');
+        }
+
+        this.chatSending.set(false);
+        this.chatCancelling.set(false);
+      }
+
+      if (this.activeChat === request) {
+        this.activeChat = null;
+      }
+    }
+  }
+
+  cancelChat(): void {
+    const request = this.activeChat;
+
+    if (!request || this.chatCancelling()) {
+      return;
+    }
+
+    request.cancelled = true;
+    this.chatCancelling.set(true);
+    this.chatNotice.set('Cancelling the reply...');
+    void this.cancelOnServer(request.id);
+  }
+
+  private async cancelOnServer(requestId: string): Promise<void> {
+    for (let attempt = 0; attempt < 4; attempt++) {
+      if (this.activeChat?.id !== requestId) {
+        return;
+      }
+
+      try {
+        const result = await firstValueFrom(
+          this.localAi.cancel(requestId)
+        );
+
+        if (result.cancelled) {
+          return;
+        }
+      } catch {
+        break;
+      }
+
+      await new Promise<void>(resolve => setTimeout(resolve, 200));
+    }
+
+    if (
+      !this.destroyRef.destroyed &&
+      this.activeChat?.id === requestId
+    ) {
+      this.chatNotice.set(
+        'The reply will be discarded. Waiting for the request to finish.'
+      );
+    }
+  }
+
+  clearChat(): void {
+    if (this.chatSending()) {
+      return;
+    }
+
+    this.chatMessages.set([]);
+    this.chatError.set('');
+    this.chatNotice.set('');
+  }
+
+  private chatFailureMessage(error: unknown): string {
+    if (!(error instanceof HttpErrorResponse)) {
+      return 'The reply could not be read. Please try again.';
+    }
+
+    switch (error.status) {
+      case 400:
+        return 'The message or conversation is too long. Try a shorter message.';
+      case 409:
+        return 'The request was cancelled. You can send your message again.';
+      case 429:
+        return 'Another AI request is running. Try again shortly.';
+      case 502:
+        return 'The model could not return a complete reply. Try a narrower question.';
+      case 503:
+        return 'Local AI is unavailable. Check that Ollama is running and the model is installed.';
+      case 504:
+        return 'Local AI took too long. Try again with a shorter message.';
+      default:
+        return 'Could not reach local AI. Please try again.';
+    }
+  }
+
+  readonly checkingAi = signal(false);
+
+  readonly aiAvailability =
+    signal<LocalAiAvailability | null>(null);
+
+  readonly aiAvailabilityError = signal('');
+
+  async checkLocalAi(): Promise<void> {
+    if (this.checkingAi()) {
+      return;
+    }
+
+    this.checkingAi.set(true);
+    this.aiAvailability.set(null);
+    this.aiAvailabilityError.set('');
+
+    try {
+      const availability = await firstValueFrom(
+        this.localAi.checkAvailability()
+      );
+
+      this.aiAvailability.set(availability);
+    } catch {
+      this.aiAvailabilityError.set(
+        'Could not check local AI. Please try again.'
+      );
+    } finally {
+      this.checkingAi.set(false);
+    }
+  }
+
   private readonly taskService =
     inject(TaskService);
 
@@ -118,7 +438,8 @@ export class AssistantPanel {
     this.loadingFocus() ||
     this.loadingBlocked() ||
     this.loadingToday() ||
-    this.loadingWeek()
+    this.loadingWeek() ||
+    this.chatSending()
   );
 
   async loadSummary(): Promise<void> {
