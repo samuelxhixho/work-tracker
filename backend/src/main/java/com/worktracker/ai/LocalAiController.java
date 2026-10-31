@@ -22,13 +22,16 @@ public class LocalAiController {
 
     private final LocalAiService localAiService;
     private final LocalAiGenerationService generationService;
+    private final LocalAiImportService importService;
 
     public LocalAiController(
             LocalAiService localAiService,
-            LocalAiGenerationService generationService
+            LocalAiGenerationService generationService,
+            LocalAiImportService importService
     ) {
         this.localAiService = localAiService;
         this.generationService = generationService;
+        this.importService = importService;
     }
 
     @GetMapping("/availability")
@@ -57,8 +60,18 @@ public class LocalAiController {
                         request.requestId(),
                         request.messages(),
                         request.currentPage(),
-                        request.playerState()
+                        request.playerState(),
+                        request.listCursor()
                 ));
+    }
+
+    @PostMapping("/import-preview")
+    public ResponseEntity<LocalAiImportService.ImportPreview> importPreview(
+            @Valid @RequestBody ImportPreviewRequest request
+    ) {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .body(importService.extract(request.text()));
     }
 
     @PostMapping("/requests/{requestId}/cancel")
@@ -68,6 +81,13 @@ public class LocalAiController {
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.noStore())
                 .body(new CancelResponse(generationService.cancel(requestId)));
+    }
+
+    public record ImportPreviewRequest(
+            @NotBlank
+            @Size(max = 8000)
+            String text
+    ) {
     }
 
     public record SummaryRequest(
@@ -81,7 +101,8 @@ public class LocalAiController {
             @NotNull @Size(min = 1, max = 11)
             List<LocalAiGenerationService.ChatMessage> messages,
             @Size(max = 100) String currentPage,
-            @Valid PlayerState playerState
+            @Valid PlayerState playerState,
+            @Valid LocalAiGenerationService.ListCursor listCursor
     ) {
     }
 

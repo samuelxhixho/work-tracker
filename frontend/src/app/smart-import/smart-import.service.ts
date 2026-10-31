@@ -1,6 +1,9 @@
 import {
+  inject,
   Injectable
 } from '@angular/core';
+
+import { firstValueFrom } from 'rxjs';
 
 import {
   SmartImportFileType,
@@ -16,6 +19,18 @@ import {
   parseSmartImportText
 } from './smart-import.text-parser';
 
+import {
+  LocalAiService
+} from '../assistant/services/local-ai.service';
+
+import {
+  normalizeSmartImportRow
+} from './smart-import.normalizer';
+
+import {
+  validateSmartImportRow
+} from './smart-import.validator';
+
 @Injectable({
   providedIn: 'root'
 })
@@ -25,6 +40,8 @@ export class SmartImportService {
     2 * 1024 * 1024;
 
   private readonly maxImportRows = 1000;
+
+  private readonly localAi = inject(LocalAiService);
 
   async parseFile(
     file: File
@@ -56,15 +73,65 @@ export class SmartImportService {
       );
     }
 
-    const rows =
-      this.parseContent(
-        content,
-        fileType
-      );
+    let rows = this.parseContent(
+      content,
+      fileType
+    );
+
+    if (rows.length === 0 && fileType !== 'csv') {
+      const lineCount = content
+        .replace(/\r\n?/g, '\n')
+        .split('\n').length;
+
+      if (content.length > 8000 || lineCount > 200) {
+        throw new Error(
+          'No structured Quests were found. Local AI extraction supports ' +
+          'up to 8,000 characters and 200 lines. Split the file into smaller parts.'
+        );
+      }
+
+      try {
+        const result = await firstValueFrom(
+          this.localAi.importPreview(content)
+        );
+
+        if (!Array.isArray(result.tasks)) {
+          throw new Error('Invalid AI extraction response.');
+        }
+
+        rows = result.tasks.map(draft => {
+          const row: SmartImportRow = {
+            id: crypto.randomUUID(),
+            sourceLine: draft.sourceLine,
+            selected: true,
+            title: draft.title,
+            description: draft.description,
+            category: draft.category,
+            status: draft.status,
+            workDate: draft.workDate,
+            issues: []
+          };
+
+          const normalized = normalizeSmartImportRow(row);
+
+          return {
+            ...normalized,
+            issues: validateSmartImportRow(normalized)
+          };
+        });
+      } catch (error) {
+        console.error('Local AI import extraction failed', error);
+
+        throw new Error(
+          'No structured Quests were found, and local AI extraction failed. ' +
+          'Check that Ollama and the WorkTracker model are running.'
+        );
+      }
+    }
 
     if (rows.length === 0) {
       throw new Error(
-        'No importable quests were found in this file.'
+        'Neither the regular parser nor local AI could identify any Quests.'
       );
     }
 
@@ -77,10 +144,19 @@ export class SmartImportService {
       );
     }
 
+    const sourceLines = content
+      .replace(/\r\n?/g, '\n')
+      .split('\n');
+
     return {
       fileName: file.name,
       fileType,
-      rows
+      rows: rows.map(row => ({
+        ...row,
+        sourceText: fileType === 'csv'
+          ? ''
+          : (sourceLines[row.sourceLine - 1] ?? '').trim()
+      }))
     };
   }
 

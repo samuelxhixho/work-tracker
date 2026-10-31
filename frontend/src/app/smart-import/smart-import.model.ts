@@ -26,6 +26,7 @@ export interface SmartImportRow {
   category: string;
   status: string;
   workDate: string;
+  sourceText?: string;
 
   issues: SmartImportIssue[];
 }

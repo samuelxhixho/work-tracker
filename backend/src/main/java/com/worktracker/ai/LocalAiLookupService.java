@@ -14,6 +14,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Pageable;
 
 import jakarta.persistence.criteria.Predicate;
 
@@ -50,15 +51,28 @@ public class LocalAiLookupService {
 
         boolean taskSearch =
                 intent.kind() == LocalAiIntent.Kind.TASK_SEARCH
-                        || intent.kind() == LocalAiIntent.Kind.WORK_OVERVIEW;
+                        || intent.kind() == LocalAiIntent.Kind.WORK_OVERVIEW
+                        || intent.kind() == LocalAiIntent.Kind.LATEST_WORK
+                        || intent.kind() == LocalAiIntent.Kind.TASK_LIST;
 
-        Period period = intent.fromDate() == null
+        Period period = intent.kind() == LocalAiIntent.Kind.LATEST_WORK
+                || intent.fromDate() == null
                 ? null
                 : new Period(
                 intent.fromDate(),
                 intent.toDate(),
                 intent.fromDate() + " to " + intent.toDate() + " inclusive"
         );
+
+        boolean listRequest = intent.kind() == LocalAiIntent.Kind.TASK_LIST;
+
+        Sort.Direction direction = listRequest
+                && intent.listOrder() == LocalAiIntent.ListOrder.OLDEST_FIRST
+                ? Sort.Direction.ASC
+                : Sort.Direction.DESC;
+
+        int pageSize = listRequest ? intent.listLimit() : TASK_LIMIT;
+        int startOffset = listRequest ? intent.listOffset() : 0;
 
         TaskMatches matches = taskSearch
                 ? findTasks(
@@ -67,7 +81,10 @@ public class LocalAiLookupService {
                 intent.category(),
                 intent.keywords(),
                 intent.questId(),
-                intent.categoryBreakdown()
+                intent.categoryBreakdown(),
+                pageSize,
+                startOffset,
+                direction
         )
                 : null;
 
@@ -101,7 +118,8 @@ public class LocalAiLookupService {
 
     private TaskMatches findTasks(
             Period period, TaskStatus status, TaskCategory category,
-            String keywords, Long taskId, boolean includeCategoryCounts
+            String keywords, Long taskId, boolean includeCategoryCounts,
+            int pageSize, int startOffset, Sort.Direction direction
     ) {
         List<String> terms = keywords == null ? List.of() : Arrays.stream(keywords.split("\\s+"))
                 .filter(term -> !term.isBlank())
@@ -109,8 +127,17 @@ public class LocalAiLookupService {
                 .toList();
 
         Specification<Task> criteria = specification(period, status, category, terms, taskId);
-        Page<Task> page = tasks.findAll(criteria,
-                PageRequest.of(0, TASK_LIMIT, Sort.by(Sort.Order.desc("workDate"), Sort.Order.desc("id"))));
+        Page<Task> page = tasks.findAll(
+                criteria,
+                new OffsetPageable(
+                        pageSize,
+                        startOffset,
+                        Sort.by(
+                                new Sort.Order(direction, "workDate"),
+                                new Sort.Order(direction, "id")
+                        )
+                )
+        );
 
         return new TaskMatches(
                 period == null ? "All saved work dates" : period.label(),
@@ -203,6 +230,69 @@ public class LocalAiLookupService {
     private String shorten(String value, int length) {
         if (value == null) return "";
         return value.length() > length ? value.substring(0, length) + "..." : value;
+    }
+
+    private record OffsetPageable(
+            int limit,
+            long offset,
+            Sort sort
+    ) implements Pageable {
+
+        private OffsetPageable {
+            if (limit < 1 || offset < 0) {
+                throw new IllegalArgumentException("Invalid pagination.");
+            }
+            java.util.Objects.requireNonNull(sort);
+        }
+
+        @Override
+        public int getPageNumber() {
+            return Math.toIntExact(offset / limit);
+        }
+
+        @Override
+        public int getPageSize() {
+            return limit;
+        }
+
+        @Override
+        public long getOffset() {
+            return offset;
+        }
+
+        @Override
+        public Sort getSort() {
+            return sort;
+        }
+
+        @Override
+        public Pageable next() {
+            return new OffsetPageable(limit, offset + limit, sort);
+        }
+
+        @Override
+        public Pageable previousOrFirst() {
+            return new OffsetPageable(
+                    limit, Math.max(0, offset - limit), sort
+            );
+        }
+
+        @Override
+        public Pageable first() {
+            return new OffsetPageable(limit, 0, sort);
+        }
+
+        @Override
+        public Pageable withPage(int pageNumber) {
+            return new OffsetPageable(
+                    limit, Math.multiplyExact((long) pageNumber, limit), sort
+            );
+        }
+
+        @Override
+        public boolean hasPrevious() {
+            return offset > 0;
+        }
     }
 
     private record Period(LocalDate from, LocalDate to, String label) { }

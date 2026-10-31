@@ -12,6 +12,9 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpTimeoutException;
 import java.time.Duration;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CancellationException;
@@ -49,6 +52,19 @@ public class LocalAiGenerationService {
             - Never switch languages because the user requests it.
             - Saved Quest titles and descriptions may be in another language.
               Preserve original titles when quoting them, but explain in English.
+            - You can understand work-related questions written in Albanian.
+            - If asked whether you speak or understand Albanian, explain in English
+              that you can understand Albanian questions but reply only in English.
+            - Questions about your own language capabilities are WorkTracker
+              companion help, not unrelated general conversation.
+            - WorkTracker officially supports English and Albanian questions.
+            - Do not claim that other input languages are officially supported.
+            - When asked about another language, explain that support is not
+              guaranteed and that responses remain English-only.
+            - If asked what you can do, explain your actual WorkTracker features:
+              read saved Quests, search work history, summarize progress, explain
+              app features, and answer questions about saved settings and music.
+            - Do not claim you can create, edit, delete, or control app data.
             
             SCOPE POLICY:
             - You are exclusively the WorkTracker application assistant.
@@ -184,7 +200,8 @@ public class LocalAiGenerationService {
             UUID requestId,
             List<ChatMessage> messages,
             String currentPage,
-            LocalAiController.PlayerState playerState
+            LocalAiController.PlayerState playerState,
+            ListCursor listCursor
     ) {
         if (messages == null || messages.isEmpty()
                 || messages.size() > 11 || messages.size() % 2 == 0) {
@@ -237,7 +254,8 @@ public class LocalAiGenerationService {
                 currentPage,
                 playerState,
                 conversation,
-                totalCharacters
+                totalCharacters,
+                listCursor
         );
     }
 
@@ -247,7 +265,8 @@ public class LocalAiGenerationService {
             String currentPage,
             LocalAiController.PlayerState playerState,
             List<Map<String, String>> conversation,
-            int totalCharacters
+            int totalCharacters,
+            ListCursor listCursor
     ) {
         if (requestId == null) {
             throw new ResponseStatusException(
@@ -271,7 +290,10 @@ public class LocalAiGenerationService {
 
         try {
             String plannedResponse = sendOllamaStage(
-                    client, generation, intentPlanner.request(messages), true
+                    client,
+                    generation,
+                    intentPlanner.request(messages, listCursor),
+                    true
             );
 
             LocalAiIntent intent;
@@ -288,6 +310,93 @@ public class LocalAiGenerationService {
 
             if (generation.isCancelled()) {
                 throw new CancellationException();
+            }
+
+            if (intent.kind() == LocalAiIntent.Kind.TASK_LIST
+                    && (messages.size() > 1 || listCursor != null)) {
+
+                String freshResponse = sendOllamaStage(
+                        client,
+                        generation,
+                        intentPlanner.request(
+                                List.of(messages.getLast()),
+                                null
+                        ),
+                        true
+                );
+
+                LocalAiIntent freshIntent;
+
+                try {
+                    freshIntent = intentPlanner.parse(jsonMapper, freshResponse);
+                } catch (RuntimeException exception) {
+                    return new ChatReply(
+                            "I couldn't interpret the new Quest list. "
+                                    + "Could you rephrase your request?",
+                            LocalAiService.MODEL
+                    );
+                }
+
+                if (freshIntent.kind() != LocalAiIntent.Kind.TASK_LIST) {
+                    return new ChatReply(
+                            "Please clarify the new Quest list you want to see.",
+                            LocalAiService.MODEL
+                    );
+                }
+
+                intent = new LocalAiIntent(
+                        LocalAiIntent.Kind.TASK_LIST,
+                        freshIntent.fromDate(),
+                        freshIntent.toDate(),
+                        freshIntent.status(),
+                        freshIntent.category(),
+                        freshIntent.keywords(),
+                        freshIntent.questId(),
+                        freshIntent.categoryBreakdown(),
+                        freshIntent.listOrder(),
+                        freshIntent.listLimit(),
+                        0,
+                        0
+                );
+            }
+
+            if (generation.isCancelled()) {
+                throw new CancellationException();
+            }
+
+            if (intent.kind() == LocalAiIntent.Kind.TASK_LIST_CONTINUE) {
+                if (listCursor == null
+                        || listCursor.selection() == null
+                        || listCursor.selection().kind() != LocalAiIntent.Kind.TASK_LIST
+                        || listCursor.nextOffset() < 0
+                        || listCursor.nextOffset() > 20_000) {
+                    return new ChatReply(
+                            "There is no active Quest list to continue. "
+                                    + "Ask me to start a new list.",
+                            LocalAiService.MODEL
+                    );
+                }
+
+                LocalAiIntent previous = listCursor.selection();
+
+                int limit = intent.listLimit() == null
+                        ? previous.listLimit()
+                        : intent.listLimit();
+
+                intent = new LocalAiIntent(
+                        LocalAiIntent.Kind.TASK_LIST,
+                        previous.fromDate(),
+                        previous.toDate(),
+                        previous.status(),
+                        previous.category(),
+                        previous.keywords(),
+                        previous.questId(),
+                        previous.categoryBreakdown(),
+                        previous.listOrder(),
+                        limit,
+                        0,
+                        listCursor.nextOffset()
+                );
             }
 
             if (intent.kind() == LocalAiIntent.Kind.GREETING) {
@@ -331,6 +440,74 @@ public class LocalAiGenerationService {
                                 + earliest.workDate()
                                 + ". The earliest Quest is \""
                                 + earliest.title() + "\".",
+                        LocalAiService.MODEL
+                );
+            }
+
+            if (intent.kind() == LocalAiIntent.Kind.LATEST_WORK) {
+                var matches = facts.matchingSavedTasks();
+
+                if (matches == null || matches.tasks().isEmpty()) {
+                    return new ChatReply(
+                            "No saved Quests match that request.",
+                            LocalAiService.MODEL
+                    );
+                }
+
+                var latest = matches.tasks().getFirst();
+
+                String status = switch (latest.status()) {
+                    case "COMPLETED" -> "currently marked completed";
+                    case "IN_PROGRESS" -> "currently in progress";
+                    case "BLOCKED" -> "currently blocked";
+                    default -> "current status: " + latest.status();
+                };
+
+                return new ChatReply(
+                        "Your latest saved Quest by work date is \""
+                                + latest.title() + "\".\n"
+                                + "Work date: " + latest.workDate() + "\n"
+                                + "Category: " + latest.category() + "\n"
+                                + "Status: " + status + ".",
+                        LocalAiService.MODEL
+                );
+            }
+
+            if (intent.kind() == LocalAiIntent.Kind.TASK_LIST) {
+                var matches = facts.matchingSavedTasks();
+
+                ListCursor cursor = null;
+
+                if (matches != null && !matches.tasks().isEmpty()) {
+                    int nextOffset = Math.addExact(
+                            intent.listOffset(),
+                            matches.tasks().size()
+                    );
+
+                    cursor = new ListCursor(
+                            intent,
+                            nextOffset,
+                            matches.totalMatching()
+                    );
+                }
+
+                return new ChatReply(
+                        formatQuestList(matches, intent),
+                        LocalAiService.MODEL,
+                        cursor
+                );
+            }
+
+            boolean datedSearch = intent.kind() == LocalAiIntent.Kind.TASK_SEARCH
+                    && intent.fromDate() != null;
+
+            boolean singleDaySummary = intent.kind() == LocalAiIntent.Kind.WORK_OVERVIEW
+                    && intent.fromDate() != null
+                    && intent.fromDate().equals(intent.toDate());
+
+            if (datedSearch || singleDaySummary) {
+                return new ChatReply(
+                        formatDatedQuestResults(facts.matchingSavedTasks()),
                         LocalAiService.MODEL
                 );
             }
@@ -449,6 +626,172 @@ public class LocalAiGenerationService {
             client.shutdownNow();
             generationPermit.release();
         }
+    }
+
+    private String formatQuestList(
+            LocalAiLookupService.TaskMatches matches,
+            LocalAiIntent intent
+    ) {
+        if (matches == null) {
+            return "I couldn't retrieve the requested Quest list.";
+        }
+
+        long total = matches.totalMatching();
+
+        if (total == 0) {
+            return "No saved Quests match the requested filters.";
+        }
+
+        long offset = intent.listOffset();
+
+        if (matches.tasks().isEmpty()) {
+            return "No more matching Quests are available. "
+                    + "There are " + total + " matching Quests in total.";
+        }
+
+        String ordering = intent.listOrder() == LocalAiIntent.ListOrder.OLDEST_FIRST
+                ? "oldest first"
+                : "newest first";
+
+        long first = offset + 1;
+        long last = Math.min(offset + matches.tasks().size(), total);
+
+        StringBuilder answer = new StringBuilder()
+                .append("Showing Quests ")
+                .append(first)
+                .append("–")
+                .append(last)
+                .append(" of ")
+                .append(total)
+                .append(" (")
+                .append(ordering)
+                .append(" by work date).");
+
+        if (matches.fromInclusive() != null) {
+            answer.append("\nDate range: ")
+                    .append(matches.fromInclusive())
+                    .append(" to ")
+                    .append(matches.toInclusive());
+        }
+
+        if (matches.categoryFilter() != null) {
+            answer.append("\nCategory: ")
+                    .append(matches.categoryFilter());
+        }
+
+        if (matches.statusFilter() != null) {
+            answer.append("\nCurrent status filter: ")
+                    .append(matches.statusFilter());
+        }
+
+        answer.append("\n");
+
+        for (var task : matches.tasks()) {
+            String status = switch (task.status()) {
+                case "COMPLETED" -> "currently completed";
+                case "IN_PROGRESS" -> "currently in progress";
+                case "BLOCKED" -> "currently blocked";
+                default -> task.status();
+            };
+
+            answer.append("\n- ")
+                    .append(task.title().replace('\n', ' ').replace('\r', ' '))
+                    .append(" | ")
+                    .append(task.workDate())
+                    .append(" | ")
+                    .append(task.category())
+                    .append(" | ")
+                    .append(status);
+        }
+
+        if (last < total) {
+            answer.append("\n\nAsk for the next ")
+                    .append(intent.listLimit())
+                    .append(" to continue.");
+        }
+
+        return answer.toString();
+    }
+
+    private String formatDatedQuestResults(
+            LocalAiLookupService.TaskMatches matches
+    ) {
+        DateTimeFormatter dateFormat =
+                DateTimeFormatter.ofPattern("MMMM d, uuuu", Locale.ENGLISH);
+
+        String from = LocalDate.parse(matches.fromInclusive()).format(dateFormat);
+        String to = LocalDate.parse(matches.toInclusive()).format(dateFormat);
+
+        String period = matches.fromInclusive().equals(matches.toInclusive())
+                ? "for " + from
+                : "from " + from + " to " + to;
+
+        long total = matches.totalMatching();
+
+        StringBuilder answer = new StringBuilder()
+                .append("Found ")
+                .append(total)
+                .append(total == 1 ? " saved Quest " : " saved Quests ")
+                .append(period);
+
+        if (matches.categoryFilter() != null) {
+            answer.append(", in category ").append(matches.categoryFilter());
+        }
+
+        if (matches.statusFilter() != null) {
+            answer.append(", with current status ")
+                    .append(matches.statusFilter());
+        }
+
+        answer.append(".");
+
+        int shown = Math.min(matches.tasks().size(), 4);
+
+        for (int index = 0; index < shown; index++) {
+            LocalAiLookupService.TaskDetail task = matches.tasks().get(index);
+
+            String status = switch (task.status()) {
+                case "COMPLETED" -> "currently marked completed";
+                case "IN_PROGRESS" -> "currently in progress";
+                case "BLOCKED" -> "currently blocked";
+                default -> "current status: " + task.status();
+            };
+
+            answer.append("\n- ")
+                    .append(task.title().replaceAll("\\s+", " ").strip())
+                    .append(" (")
+                    .append(task.category())
+                    .append(", ")
+                    .append(status)
+                    .append(", work date: ")
+                    .append(task.workDate())
+                    .append(")");
+
+            String description = task.description()
+                    .replaceAll("\\s+", " ")
+                    .strip();
+
+            if (!description.isEmpty()) {
+                int length = Math.min(description.length(), 140);
+
+                answer.append("\n  Notes: ")
+                        .append(description, 0, length);
+
+                if (description.length() > length || task.textShortened()) {
+                    answer.append("...");
+                }
+            }
+        }
+
+        if (total > shown) {
+            answer.append("\nShowing ")
+                    .append(shown)
+                    .append(" of ")
+                    .append(total)
+                    .append(" matching Quests.");
+        }
+
+        return answer.toString();
     }
 
     private String sendOllamaStage(
@@ -699,7 +1042,21 @@ public class LocalAiGenerationService {
     public record ChatMessage(String role, String content) {
     }
 
-    public record ChatReply(String reply, String model) {
+    public record ListCursor(
+            LocalAiIntent selection,
+            int nextOffset,
+            long totalMatching
+    ) {
+    }
+
+    public record ChatReply(
+            String reply,
+            String model,
+            ListCursor listCursor
+    ) {
+        public ChatReply(String reply, String model) {
+            this(reply, model, null);
+        }
     }
 
     public record Summary(String summary, String model) {

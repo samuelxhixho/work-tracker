@@ -32,8 +32,44 @@ export interface LocalAiPlayerState {
   duration: number;
 }
 
+export interface LocalAiListSelection {
+  kind: string;
+  fromDate: string | null;
+  toDate: string | null;
+  status: string | null;
+  category: string | null;
+  keywords: string | null;
+  questId: number | null;
+  categoryBreakdown: boolean;
+  listOrder: 'OLDEST_FIRST' | 'NEWEST_FIRST';
+  listLimit: number;
+  listPage: number;
+  listOffset: number;
+}
+
+export interface LocalAiListCursor {
+  selection: LocalAiListSelection;
+  nextOffset: number;
+  totalMatching: number;
+}
+
 export interface LocalAiChatReply {
   reply: string;
+  model: string;
+  listCursor: LocalAiListCursor | null;
+}
+
+export interface LocalAiImportDraft {
+  sourceLine: number;
+  title: string;
+  description: string;
+  category: string;
+  status: string;
+  workDate: string;
+}
+
+export interface LocalAiImportPreview {
+  tasks: LocalAiImportDraft[];
   model: string;
 }
 
@@ -60,18 +96,25 @@ export class LocalAiService {
     );
   }
 
+  importPreview(text: string): Observable<LocalAiImportPreview> {
+    return this.http.post<LocalAiImportPreview>(
+      `${this.baseUrl}/import-preview`,
+      { text }
+    );
+  }
+
   chat(
     requestId: string,
     messages: LocalAiChatMessage[],
     currentPage: string,
-    playerState: LocalAiPlayerState
+    playerState: LocalAiPlayerState,
+    listCursor: LocalAiListCursor | null
   ): Observable<LocalAiChatReply> {
     return this.http.post<LocalAiChatReply>(
       `${this.baseUrl}/chat`,
-      { requestId, messages, currentPage, playerState }
+      { requestId, messages, currentPage, playerState, listCursor }
     );
   }
-
   cancel(requestId: string): Observable<LocalAiCancellation> {
     return this.http.post<LocalAiCancellation>(
       `${this.baseUrl}/requests/${encodeURIComponent(requestId)}/cancel`,

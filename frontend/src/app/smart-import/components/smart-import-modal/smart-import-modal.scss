@@ -336,6 +336,30 @@
   font-size: 0.68rem;
 }
 
+.source-evidence {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+
+  border: 1px solid rgba(255, 244, 228, 0.08);
+  border-radius: 10px;
+
+  background: rgba(255, 255, 255, 0.025);
+  color: #b6c2cd;
+  font-size: 0.76rem;
+
+  summary {
+    color: #edb17a;
+    cursor: pointer;
+  }
+
+  p {
+    margin: 9px 0 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    line-height: 1.5;
+  }
+}
+
 .row-valid {
   color: #8fd0a7;
   background: rgba(69, 157, 99, 0.1);

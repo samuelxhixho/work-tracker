@@ -480,6 +480,28 @@ h2 {
     font-size: 0.85rem;
     line-height: 1.5;
 
+    color-scheme: dark;
+    scrollbar-width: thin;
+    scrollbar-color: #526171 #101c29;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: #101c29;
+      border-radius: 6px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #526171;
+      border-radius: 6px;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+      background: #718396;
+    }
+
     &:focus-visible {
       outline: 2px solid #d59c69;
       outline-offset: 2px;

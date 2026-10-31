@@ -32,7 +32,7 @@ import {
 } from '../../../tasks/task.model';
 import {
   LocalAiAvailability,
-  LocalAiChatMessage,
+  LocalAiChatMessage, LocalAiListCursor,
   LocalAiService
 } from '../../services/local-ai.service';
 
@@ -92,6 +92,7 @@ export class AssistantPanel {
 
   readonly chatDraft = signal('');
   readonly chatMessages = signal<LocalAiChatMessage[]>([]);
+  private listCursor: LocalAiListCursor | null = null;
   readonly chatSending = signal(false);
   readonly chatCancelling = signal(false);
   readonly chatError = signal('');
@@ -219,7 +220,8 @@ export class AssistantPanel {
             volume: this.musicPlayer.volume(),
             currentTime: this.musicPlayer.currentTime(),
             duration: this.musicPlayer.duration()
-          }
+          },
+          this.listCursor
         )
       );
 
@@ -229,6 +231,10 @@ export class AssistantPanel {
 
       if (typeof result.reply !== 'string' || !result.reply.trim()) {
         throw new Error('Empty chat reply');
+      }
+
+      if (result.listCursor) {
+        this.listCursor = result.listCursor;
       }
 
       this.chatMessages.update(current => [
@@ -313,6 +319,7 @@ export class AssistantPanel {
     }
 
     this.chatMessages.set([]);
+    this.listCursor = null;
     this.chatError.set('');
     this.chatNotice.set('');
   }

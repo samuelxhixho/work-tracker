@@ -87,6 +87,11 @@ function parseDatedLog(
       return;
     }
 
+    if (/^\s*(?:#{1,6}\s+.+|\*\*[^*]+\*\*)\s*$/.test(line)) {
+      flushCurrentBlock();
+      return;
+    }
+
     const bulletMatch =
       /^\s*[*-]\s+(.+)$/.exec(line);
 
@@ -194,7 +199,7 @@ function parseDatedLogDate(
   line: string
 ): string | null {
   const match =
-    /^\s*Dt\s+(\d{1,2})\.(\d{1,2})\.(\d{4})\s*:\s*$/i
+    /^\s*Dt\s+(\d{1,2})\.(\d{1,2})\.(\d{4})\s*:?\s*$/i
       .exec(line);
 
   if (!match) {
