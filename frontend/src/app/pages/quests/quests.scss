@@ -3,6 +3,36 @@
   gap: 20px;
 }
 
+.page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.import-quests-button {
+  min-height: 42px;
+  padding: 0 17px;
+
+  border: 1px solid rgba(240, 178, 118, 0.16);
+  border-radius: 11px;
+
+  color: #d6a474;
+  background: rgba(240, 178, 118, 0.04);
+
+  cursor: pointer;
+
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease;
+
+  &:hover {
+    color: #f0b276;
+    border-color: rgba(240, 178, 118, 0.28);
+    background: rgba(240, 178, 118, 0.08);
+  }
+}
+
 .quest-summary-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -230,6 +260,14 @@
 }
 
 @media (max-width: 700px) {
+  .page-header-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .import-quests-button {
+    width: 100%;
+  }
   .page-header .add-task-button {
     width: 100%;
     justify-content: center;

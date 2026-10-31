@@ -14,14 +14,24 @@
       </p>
     </div>
 
-    <button
-      type="button"
-      class="add-task-button"
-      (click)="openTaskForm()"
-    >
-      <span>+</span>
-      New Quest
-    </button>
+    <div class="page-header-actions" data-companion-avoid>
+      <button
+        type="button"
+        class="import-quests-button"
+        (click)="openSmartImport()"
+      >
+        Import Quests
+      </button>
+
+      <button
+        type="button"
+        class="add-task-button"
+        (click)="openTaskForm()"
+      >
+        <span>+</span>
+        New Quest
+      </button>
+    </div>
   </header>
 
   <section class="quest-summary-grid">
@@ -244,7 +254,7 @@
             </div>
 
             <div class="quest-card-side">
-              <div class="task-actions">
+              <div class="task-actions" data-companion-avoid>
                 <span
                   class="task-status"
                   [class.completed]="task.status === 'COMPLETED'"
@@ -292,4 +302,11 @@
     (closed)="closeDeleteConfirmation()"
     (deleted)="onTaskDeleted()"
   ></app-delete-confirmation>
+}
+
+@if (showSmartImport()) {
+  <app-smart-import-modal
+    (closed)="closeSmartImport()"
+    (imported)="onSmartImportCompleted()"
+  ></app-smart-import-modal>
 }

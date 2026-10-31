@@ -1,6 +1,6 @@
 {
   "name": "worktracker-desktop",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "WorkTracker local desktop application",
   "author": "Samuel Xhixho",
   "main": "main.js",
@@ -25,13 +25,15 @@
     },
     "files": [
       "main.js",
+      "preload.js",
+      "splash.html",
       "package.json",
       "build/icon.png"
     ],
     "extraResources": [
       {
-        "from": "../backend/target/backend-0.0.1-SNAPSHOT.jar",
-        "to": "backend/backend-0.0.1-SNAPSHOT.jar"
+        "from": "../backend/target/extracted",
+        "to": "backend"
       },
       {
         "from": "runtime",

@@ -1,0 +1,33 @@
+<div class="mascot-host">
+  <div
+    id="worktracker-assistant-panel"
+    class="companion-note"
+    [hidden]="!noteOpen()"
+  >
+    @if (noteOpen()) {
+      <app-assistant-panel
+        (closed)="closeNote()"
+      />
+    }
+  </div>
+
+  <button
+    type="button"
+    class="mascot-launcher"
+    aria-label="Open WorkTracker companion"
+    aria-controls="worktracker-assistant-panel"
+    [attr.aria-expanded]="noteOpen()"
+    (click)="toggleNote()"
+  >
+    @defer (on idle) {
+      <app-mascot-idle aria-hidden="true" />
+    } @placeholder {
+      <img
+        src="/assets/mascot/worktracker-mascot-static.png"
+        width="408"
+        height="612"
+        alt=""
+      />
+    }
+  </button>
+</div>

@@ -24,6 +24,10 @@ import {
   DeleteConfirmationComponent
 } from '../../shared/components/delete-confirmation/delete-confirmation';
 
+import {
+  SmartImportModalComponent
+} from '../../smart-import/components/smart-import-modal/smart-import-modal';
+
 const CATEGORY_LABELS: Record<TaskCategory, string> = {
   FRONTEND: 'Frontend',
   BACKEND: 'Backend',
@@ -44,7 +48,8 @@ const STATUS_LABELS: Record<TaskStatus, string> = {
   standalone: true,
   imports: [
     QuestFormComponent,
-    DeleteConfirmationComponent
+    DeleteConfirmationComponent,
+    SmartImportModalComponent
   ],
   templateUrl: './quests.html',
   styleUrl: './quests.scss'
@@ -69,6 +74,8 @@ export class Quests implements OnInit {
 
   readonly showTaskForm = signal(false);
   readonly editingTask = signal<Task | null>(null);
+
+  readonly showSmartImport = signal(false);
 
   readonly taskToDelete = signal<Task | null>(null);
 
@@ -240,6 +247,19 @@ export class Quests implements OnInit {
     status: TaskStatus
   ): string {
     return STATUS_LABELS[status];
+  }
+
+  openSmartImport(): void {
+    this.showSmartImport.set(true);
+  }
+
+  closeSmartImport(): void {
+    this.showSmartImport.set(false);
+  }
+
+  onSmartImportCompleted(): void {
+    this.showSmartImport.set(false);
+    this.loadTasks();
   }
 
   openTaskForm(): void {

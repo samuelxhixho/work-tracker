@@ -1,0 +1,173 @@
+@if (player.track(); as track) {
+  <section class="music-dock" aria-label="Music player">
+    <div class="dock-full">
+      <div class="dock-track">
+        <div class="dock-art" aria-hidden="true">
+          ♫
+        </div>
+
+        <div class="dock-track-info">
+          <span class="dock-kicker">NOW PLAYING</span>
+
+          <strong [title]="track.title">
+            {{ track.title }}
+          </strong>
+
+          <small>
+            {{ track.artist || 'Unknown artist' }}
+          </small>
+        </div>
+      </div>
+
+      <div
+        class="dock-progress"
+        role="progressbar"
+        aria-label="Playback progress"
+        [attr.aria-valuenow]="player.currentTime()"
+        [attr.aria-valuemax]="player.duration() || 0"
+        aria-valuemin="0"
+      >
+        <div
+          class="dock-progress-fill"
+          [style.width.%]="progress()"
+        ></div>
+      </div>
+
+      <div class="dock-times">
+        <span>{{ formatTime(player.currentTime()) }}</span>
+        <span>{{ formatTime(player.duration()) }}</span>
+      </div>
+
+      <div class="dock-controls">
+        <button
+          class="dock-control"
+          type="button"
+          aria-label="Previous track"
+          [disabled]="!player.canGoPrevious()"
+          (click)="player.previousTrack()"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M5 5v14M19 5 7 12l12 7V5Z"/>
+          </svg>
+        </button>
+
+        <button
+          class="dock-control dock-play"
+          type="button"
+          [attr.aria-label]="player.playing() ? 'Pause' : 'Play'"
+          (click)="player.togglePlayback()"
+        >
+          @if (player.playing()) {
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M8 5v14M16 5v14"/>
+            </svg>
+          } @else {
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m8 5 11 7-11 7V5Z"/>
+            </svg>
+          }
+        </button>
+
+        <button
+          class="dock-control"
+          type="button"
+          aria-label="Next track"
+          [disabled]="!player.canGoNext()"
+          (click)="player.nextTrack()"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M19 5v14M5 5l12 7-12 7V5Z"/>
+          </svg>
+        </button>
+
+        <a
+          class="dock-open"
+          routerLink="/chill-room"
+          aria-label="Open Chill Room"
+          title="Open Chill Room"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M7 17 17 7M8 7h9v9"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <button
+      #dockCompactButton
+      class="dock-compact"
+      type="button"
+      aria-label="Open music controls"
+      title="Music controls"
+      aria-controls="worktracker-music-dock-menu"
+      [attr.aria-expanded]="compactMenuOpen()"
+      (click)="toggleCompactMenu(dockCompactButton)"
+    >
+      @if (player.playing()) {
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M8 5v14M16 5v14"/>
+        </svg>
+      } @else {
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M9 18V5l11-2v13"/>
+          <circle cx="6" cy="18" r="3"/>
+          <circle cx="17" cy="16" r="3"/>
+        </svg>
+      }
+    </button>
+  </section>
+
+  <div
+    #dockPopover
+    id="worktracker-music-dock-menu"
+    class="dock-popover"
+    popover="auto"
+    aria-label="Music controls"
+    [style.left.px]="compactMenuPosition().left"
+    [style.top.px]="compactMenuPosition().top"
+    (toggle)="onCompactMenuToggle()"
+  >
+    <div class="dock-popover-track">
+      <strong [title]="track.title">{{ track.title }}</strong>
+      <small>{{ track.artist || 'Unknown artist' }}</small>
+    </div>
+
+    <div class="dock-popover-controls">
+      <button
+        type="button"
+        aria-label="Previous track"
+        [disabled]="!player.canGoPrevious()"
+        (click)="player.previousTrack()"
+      >
+        ◀
+      </button>
+
+      <button
+        type="button"
+        class="dock-popover-play"
+        [attr.aria-label]="player.playing() ? 'Pause' : 'Play'"
+        (click)="player.togglePlayback()"
+      >
+        {{ player.playing() ? '⏸' : '▶' }}
+      </button>
+
+      <button
+        type="button"
+        aria-label="Next track"
+        [disabled]="!player.canGoNext()"
+        (click)="player.nextTrack()"
+      >
+        ▶
+      </button>
+    </div>
+
+    <a
+      routerLink="/chill-room"
+      class="dock-popover-open"
+      (click)="closeCompactMenu()"
+    >
+      Open Chill Room
+      <span aria-hidden="true">↗</span>
+    </a>
+  </div>
+}

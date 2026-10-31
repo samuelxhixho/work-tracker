@@ -1,5 +1,6 @@
 import {
   Component,
+  OnDestroy,
   OnInit,
   inject,
   signal
@@ -19,6 +20,17 @@ import {
   UpdateSettingsRequest
 } from '../../settings/settings.model';
 
+import {
+  MascotAnimationService
+} from '../../mascot/services/mascot-animation.service';
+
+interface WorkTrackerDesktopBridge {
+  setupLocalAi(): Promise<{
+    ollamaRunning: boolean;
+    modelInstalled: boolean;
+  }>;
+}
+
 @Component({
   selector: 'app-settings',
   standalone: true,
@@ -28,12 +40,17 @@ import {
   templateUrl: './settings.html',
   styleUrl: './settings.scss'
 })
-export class Settings implements OnInit {
+export class Settings implements OnInit, OnDestroy {
   private readonly settingsService =
     inject(SettingsService);
 
   private readonly formBuilder =
     inject(FormBuilder);
+
+  private readonly mascotAnimation =
+    inject(MascotAnimationService);
+
+  private finishSettingsThinking: (() => void) | null = null;
 
   readonly loading =
     signal(true);
@@ -49,6 +66,16 @@ export class Settings implements OnInit {
 
   readonly saved =
     signal(false);
+
+  readonly aiSetupBusy = signal(false);
+  readonly aiSetupMessage = signal('');
+  readonly aiSetupError = signal(false);
+
+  readonly aiSetupAvailable = Boolean(
+    (window as Window & {
+      workTrackerDesktop?: WorkTrackerDesktopBridge;
+    }).workTrackerDesktop
+  );
 
   readonly settingsForm =
     this.formBuilder.nonNullable.group({
@@ -66,6 +93,9 @@ export class Settings implements OnInit {
     });
 
   ngOnInit(): void {
+    this.finishSettingsThinking =
+      this.mascotAnimation.beginThinking();
+
     this.loadSettings();
   }
 
@@ -112,6 +142,7 @@ export class Settings implements OnInit {
 
           this.saving.set(false);
           this.saved.set(true);
+          this.stopThinking();
         },
 
         error: error => {
@@ -124,6 +155,47 @@ export class Settings implements OnInit {
           this.saveError.set(true);
         }
       });
+  }
+
+  async setupLocalAi(): Promise<void> {
+    const bridge = (window as Window & {
+      workTrackerDesktop?: WorkTrackerDesktopBridge;
+    }).workTrackerDesktop;
+
+    if (!bridge || this.aiSetupBusy()) {
+      return;
+    }
+
+    this.aiSetupBusy.set(true);
+    this.aiSetupMessage.set('');
+    this.aiSetupError.set(false);
+
+    try {
+      const status = await bridge.setupLocalAi();
+
+      if (status.ollamaRunning && status.modelInstalled) {
+        this.aiSetupMessage.set(
+          'Local AI is ready. Ollama and Qwen are available.'
+        );
+      } else if (status.ollamaRunning) {
+        this.aiSetupMessage.set(
+          'Ollama is available, but the Qwen model still needs setup.'
+        );
+      } else {
+        this.aiSetupMessage.set(
+          'Ollama is not available. You can retry setup later.'
+        );
+      }
+    } catch (error) {
+      console.error('Local AI setup failed', error);
+
+      this.aiSetupError.set(true);
+      this.aiSetupMessage.set(
+        'Could not complete local AI setup. Please try again.'
+      );
+    } finally {
+      this.aiSetupBusy.set(false);
+    }
   }
 
   private loadSettings(): void {
@@ -156,5 +228,14 @@ export class Settings implements OnInit {
           this.loading.set(false);
         }
       });
+  }
+
+  private stopThinking(): void {
+    this.finishSettingsThinking?.();
+    this.finishSettingsThinking = null;
+  }
+
+  ngOnDestroy(): void {
+    this.stopThinking();
   }
 }

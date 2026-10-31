@@ -1,0 +1,23 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.mascot-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+}
+
+canvas,
+.mascot-fallback {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.mascot-fallback {
+  position: absolute;
+  inset: 0;
+  object-fit: contain;
+}

@@ -1,0 +1,299 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.music-dock {
+  min-width: 0;
+}
+
+.dock-full {
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+
+  border: 1px solid rgba(240, 178, 118, 0.12);
+  border-radius: 16px;
+
+  background: linear-gradient(
+    155deg,
+    rgba(31, 35, 41, 0.96),
+    rgba(20, 29, 39, 0.98)
+  );
+}
+
+.dock-track {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dock-art {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+
+  display: grid;
+  place-items: center;
+
+  border: 1px solid rgba(240, 178, 118, 0.1);
+  border-radius: 10px;
+
+  color: #d8a679;
+  background: rgba(240, 178, 118, 0.06);
+}
+
+.dock-track-info {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+
+  strong,
+  small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  strong {
+    color: #f0e7dc;
+    font-size: 0.76rem;
+  }
+
+  small {
+    color: #8f9baa;
+    font-size: 0.68rem;
+  }
+}
+
+.dock-kicker {
+  color: #d8a679;
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.dock-progress {
+  height: 3px;
+  overflow: hidden;
+
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.dock-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: #d8a679;
+}
+
+.dock-times {
+  margin-top: -7px;
+
+  display: flex;
+  justify-content: space-between;
+
+  color: #778594;
+  font-size: 0.58rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.dock-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.dock-control,
+.dock-open {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+
+  display: grid;
+  place-items: center;
+
+  border: 0;
+  border-radius: 50%;
+
+  color: #9ca8b5;
+  background: transparent;
+
+  cursor: pointer;
+
+  svg {
+    width: 15px;
+    height: 15px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  &:hover:not(:disabled) {
+    color: #e8c29d;
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #d19a66;
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+}
+
+.dock-play {
+  width: 34px;
+  height: 34px;
+
+  color: #e8c29d;
+  background: rgba(240, 178, 118, 0.13);
+}
+
+.dock-open {
+  margin-left: auto;
+  text-decoration: none;
+}
+
+.dock-compact {
+  display: none;
+}
+
+.dock-popover {
+  position: fixed;
+  inset: auto;
+
+  width: min(240px, calc(100vw - 16px));
+  max-height: calc(100vh - 16px);
+  margin: 0;
+  padding: 12px;
+
+  overflow-y: auto;
+
+  border: 1px solid rgba(240, 178, 118, 0.14);
+  border-radius: 14px;
+
+  color: #e9dfd2;
+  background: #1c232c;
+
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+}
+
+.dock-popover-track {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+
+  strong,
+  small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  strong {
+    font-size: 0.8rem;
+  }
+
+  small {
+    color: #8f9baa;
+    font-size: 0.7rem;
+  }
+}
+
+.dock-popover-controls {
+  margin: 14px 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+
+  button {
+    width: 34px;
+    height: 34px;
+
+    border: 0;
+    border-radius: 50%;
+
+    color: #a7b2be;
+    background: rgba(255, 255, 255, 0.04);
+
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+  }
+
+  .dock-popover-play {
+    width: 40px;
+    height: 40px;
+
+    color: #e8c29d;
+    background: rgba(240, 178, 118, 0.14);
+  }
+}
+
+.dock-popover-open {
+  padding: 10px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  border-radius: 8px;
+
+  color: #d8a679;
+  background: rgba(240, 178, 118, 0.05);
+
+  font-size: 0.75rem;
+  text-decoration: none;
+}
+
+@media (max-width: 980px) {
+  .dock-full {
+    display: none;
+  }
+
+  .dock-compact {
+    width: 44px;
+    height: 44px;
+    margin-inline: auto;
+    padding: 0;
+
+    display: grid;
+    place-items: center;
+
+    border: 1px solid rgba(240, 178, 118, 0.14);
+    border-radius: 14px;
+
+    color: #d8a679;
+    background: rgba(240, 178, 118, 0.06);
+
+    cursor: pointer;
+
+    svg {
+      width: 20px;
+      height: 20px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    &:focus-visible {
+      outline: 2px solid #d19a66;
+      outline-offset: 2px;
+    }
+  }
+}

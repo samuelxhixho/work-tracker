@@ -1,0 +1,588 @@
+<section
+  aria-labelledby="assistant-panel-title"
+  class="assistant-card"
+  [class.assistant-card-chat]="companionPage() === 'chat'"
+>
+  <header class="assistant-header">
+    <div>
+      <span class="assistant-kicker">
+        WORKTRACKER COMPANION
+      </span>
+
+      <h2 id="assistant-panel-title">
+        {{ companionPage() === 'chat' ? 'Chat with your companion' : 'One quest at a time.' }}
+      </h2>
+    </div>
+
+    <button
+      (click)="closed.emit()"
+      aria-label="Close WorkTracker companion"
+      class="assistant-close"
+      type="button"
+    >
+      &times;
+    </button>
+  </header>
+
+  @if (companionPage() === 'chat') {
+    <div class="companion-chat">
+      <div class="chat-toolbar">
+        <button
+          (click)="backToHome()"
+          class="chat-back"
+          type="button"
+        >
+          <span aria-hidden="true">&larr;</span>
+          Back
+        </button>
+
+        <span class="chat-badge">Local AI · Experimental</span>
+      </div>
+
+      @if (
+        checkingAi() ||
+        aiAvailabilityError() ||
+        aiAvailability()?.status !== 'AVAILABLE'
+        ) {
+        <div class="chat-availability" role="status" aria-live="polite">
+          @if (checkingAi()) {
+            <p>Checking local AI...</p>
+          } @else if (aiAvailabilityError()) {
+            <p>{{ aiAvailabilityError() }}</p>
+          } @else if (aiAvailability(); as availability) {
+            <p>{{ availability.message }}</p>
+          }
+
+          @if (!checkingAi()) {
+            <button
+              type="button"
+              class="chat-back"
+              (click)="checkLocalAi()"
+            >
+              Try again
+            </button>
+          }
+        </div>
+      }
+
+      <div
+        #chatThread
+        class="chat-thread"
+        role="log"
+        aria-label="Conversation"
+      >
+        @if (chatMessages().length === 0) {
+          <div class="chat-empty">
+            <h3>A little help with your workday.</h3>
+            <p>Share your notes or ask for help planning your next step.</p>
+            <p class="chat-note">
+              Ask about saved Quests from any date, search work topics,
+              check preferences, or ask what's playing in Chill Room.
+              I can read your saved data, but I can't change it.
+            </p>
+          </div>
+        }
+
+        @for (message of chatMessages(); track $index) {
+          <article
+            class="chat-message"
+            [class.chat-message-user]="message.role === 'user'"
+          >
+            <strong>
+              {{ message.role === 'user' ? 'You' : 'Companion' }}
+            </strong>
+            <p>{{ message.content }}</p>
+          </article>
+        }
+      </div>
+
+      <div class="chat-feedback" role="status" aria-live="polite">
+        @if (chatSending()) {
+          <p>{{ chatCancelling() ? 'Cancelling...' : 'Thinking...' }}</p>
+        }
+
+        @if (chatNotice()) {
+          <p>{{ chatNotice() }}</p>
+        }
+      </div>
+
+      @if (chatError()) {
+        <p class="chat-error" role="alert">{{ chatError() }}</p>
+      }
+
+      <div class="chat-composer">
+        <label for="companion-chat-input">Your message</label>
+
+        <textarea
+          #chatInput
+          id="companion-chat-input"
+          rows="3"
+          maxlength="2000"
+          placeholder="What are you working on?"
+          [value]="chatDraft()"
+          [disabled]="chatSending()"
+          (input)="chatDraft.set(chatInput.value)"
+          aria-describedby="chat-input-help"
+        ></textarea>
+
+        <div class="chat-composer-actions">
+          <span id="chat-input-help">{{ chatDraft().length }}/2000</span>
+
+          @if (chatSending()) {
+            <button
+              type="button"
+              class="chat-back"
+              [disabled]="chatCancelling()"
+              (click)="cancelChat()"
+            >
+              {{ chatCancelling() ? 'Cancelling...' : 'Cancel' }}
+            </button>
+          } @else {
+            <button
+              type="button"
+              class="chat-back chat-send"
+              [disabled]="
+                busy() ||
+                !chatDraft().trim() ||
+                aiAvailability()?.status !== 'AVAILABLE'
+              "
+              (click)="sendChat()"
+            >
+              Send
+            </button>
+          }
+        </div>
+
+        <div class="chat-footer">
+          <small>AI replies can make mistakes.</small>
+
+          @if (chatMessages().length > 0) {
+            <button
+              type="button"
+              class="chat-back"
+              [disabled]="chatSending()"
+              (click)="clearChat()"
+            >
+              Clear chat
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+  } @else {
+
+    <p class="assistant-copy">
+      I can help you review your work and move around WorkTracker.
+    </p>
+
+    <div class="assistant-actions">
+      <button
+        (click)="openChat()"
+        [disabled]="busy()"
+        class="assistant-action assistant-action-primary"
+        type="button"
+      >
+        <span class="action-title">Chat with local AI</span>
+        <span class="action-copy">
+        Open a conversation with your companion.
+      </span>
+      </button>
+
+      <button
+        (click)="loadSummary()"
+        [disabled]="busy()"
+        class="assistant-action assistant-action-primary"
+        type="button"
+      >
+      <span class="action-title">
+        Quick summary
+      </span>
+
+        <span class="action-copy">
+        Get the current picture at a glance.
+      </span>
+      </button>
+
+      <button
+        (click)="loadFocus()"
+        [disabled]="busy()"
+        class="assistant-action"
+        type="button"
+      >
+      <span class="action-title">
+        What should I focus on?
+      </span>
+
+        <span class="action-copy">
+        Find the next thing that needs your attention.
+      </span>
+      </button>
+
+      <button
+        (click)="loadBlocked()"
+        [disabled]="busy()"
+        class="assistant-action"
+        type="button"
+      >
+      <span class="action-title">
+        Blocked work
+      </span>
+
+        <span class="action-copy">
+        See which quests are currently stuck.
+      </span>
+      </button>
+
+      <button
+        (click)="loadToday()"
+        [disabled]="busy()"
+        class="assistant-action"
+        type="button"
+      >
+      <span class="action-title">
+        Today's quests
+      </span>
+
+        <span class="action-copy">
+        See what is on your plate today.
+      </span>
+      </button>
+
+      <button
+        (click)="loadWeek()"
+        [disabled]="busy()"
+        class="assistant-action"
+        type="button"
+      >
+      <span class="action-title">
+        Weekly progress
+      </span>
+
+        <span class="action-copy">
+        Check how this week is moving.
+      </span>
+      </button>
+    </div>
+
+    @if (activeView() === 'summary') {
+      @if (loadingSummary()) {
+        <div
+          class="assistant-result assistant-result-loading"
+          role="status"
+        >
+          Putting together your summary...
+        </div>
+      } @else if (summaryError()) {
+        <div
+          class="assistant-result assistant-result-error"
+          role="alert"
+        >
+          I couldn't load your summary.
+
+          <button
+            (click)="loadSummary()"
+            class="result-retry"
+            type="button"
+          >
+            Try again
+          </button>
+        </div>
+      } @else if (summaryInsight(); as insight) {
+        <div class="assistant-result focus-result">
+        <span class="focus-kicker">
+          OVERVIEW
+        </span>
+
+          <strong class="focus-title">
+            {{ insight.title }}
+          </strong>
+
+          <p class="focus-message">
+            {{ insight.message }}
+          </p>
+        </div>
+      }
+    }
+
+    @if (activeView() === 'focus') {
+      @if (loadingFocus()) {
+        <div
+          class="assistant-result assistant-result-loading"
+          role="status"
+        >
+          Checking what needs attention...
+        </div>
+      } @else if (focusError()) {
+        <div
+          class="assistant-result assistant-result-error"
+          role="alert"
+        >
+          I couldn't check today's focus.
+
+          <button
+            (click)="loadFocus()"
+            class="result-retry"
+            type="button"
+          >
+            Try again
+          </button>
+        </div>
+      } @else if (focusInsight(); as insight) {
+        <div class="assistant-result focus-result">
+        <span class="focus-kicker">
+          FOCUS
+        </span>
+
+          <strong class="focus-title">
+            {{ insight.title }}
+          </strong>
+
+          <p class="focus-message">
+            {{ insight.message }}
+          </p>
+
+          @if (insight.task) {
+            <span
+              [attr.data-status]="insight.task.status"
+              class="quest-status"
+            >
+            {{ formatStatus(insight.task.status) }}
+          </span>
+          }
+        </div>
+      }
+    }
+
+    @if (activeView() === 'blocked') {
+      @if (loadingBlocked()) {
+        <div
+          class="assistant-result assistant-result-loading"
+          role="status"
+        >
+          Checking blocked quests...
+        </div>
+      } @else if (blockedError()) {
+        <div
+          class="assistant-result assistant-result-error"
+          role="alert"
+        >
+          I couldn't load blocked quests.
+
+          <button
+            (click)="loadBlocked()"
+            class="result-retry"
+            type="button"
+          >
+            Try again
+          </button>
+        </div>
+      } @else if (blockedTasks(); as tasks) {
+        <div class="assistant-result">
+          @if (tasks.length === 0) {
+            <p class="empty-result">
+              No blocked quests right now.
+            </p>
+          } @else {
+            <div class="result-heading">
+              <strong>
+                {{ tasks.length }}
+                {{ tasks.length === 1 ? 'blocked quest' : 'blocked quests' }}
+              </strong>
+            </div>
+
+            <div class="quest-list">
+              @for (task of tasks.slice(0, 3);
+                track task.id) {
+                <div class="quest-item">
+                <span class="quest-title">
+                  {{ task.title }}
+                </span>
+
+                  <span
+                    [attr.data-status]="task.status"
+                    class="quest-status"
+                  >
+                  {{ formatStatus(task.status) }}
+                </span>
+                </div>
+              }
+            </div>
+
+            @if (tasks.length > 3) {
+              <p class="more-quests">
+                +{{ tasks.length - 3 }} more
+              </p>
+            }
+          }
+        </div>
+      }
+    }
+
+    @if (activeView() === 'today') {
+      @if (loadingToday()) {
+        <div
+          class="assistant-result assistant-result-loading"
+          role="status"
+        >
+          Checking today's quests...
+        </div>
+      } @else if (todayError()) {
+        <div
+          class="assistant-result assistant-result-error"
+          role="alert"
+        >
+          I couldn't load today's quests.
+
+          <button
+            (click)="loadToday()"
+            class="result-retry"
+            type="button"
+          >
+            Try again
+          </button>
+        </div>
+      } @else if (todayTasks(); as tasks) {
+        <div class="assistant-result">
+          @if (tasks.length === 0) {
+            <p class="empty-result">
+              No quests logged for today.
+            </p>
+          } @else {
+            <div class="result-heading">
+              <strong>
+                {{ tasks.length }}
+                {{ tasks.length === 1 ? 'quest' : 'quests' }}
+                today
+              </strong>
+            </div>
+
+            <div class="quest-list">
+              @for (task of tasks.slice(0, 3);
+                track task.id) {
+                <div class="quest-item">
+                <span class="quest-title">
+                  {{ task.title }}
+                </span>
+
+                  <span
+                    [attr.data-status]="task.status"
+                    class="quest-status"
+                  >
+                  {{ formatStatus(task.status) }}
+                </span>
+                </div>
+              }
+            </div>
+
+            @if (tasks.length > 3) {
+              <p class="more-quests">
+                +{{ tasks.length - 3 }} more
+              </p>
+            }
+          }
+        </div>
+      }
+    }
+
+    @if (activeView() === 'week') {
+      @if (loadingWeek()) {
+        <div
+          class="assistant-result assistant-result-loading"
+          role="status"
+        >
+          Checking this week's progress...
+        </div>
+      } @else if (weekError()) {
+        <div
+          class="assistant-result assistant-result-error"
+          role="alert"
+        >
+          I couldn't load this week's progress.
+
+          <button
+            (click)="loadWeek()"
+            class="result-retry"
+            type="button"
+          >
+            Try again
+          </button>
+        </div>
+      } @else if (weeklyReport(); as report) {
+        <div class="assistant-result">
+          <div class="result-heading">
+            <strong>
+              This week
+            </strong>
+
+            <span class="week-range">
+            {{ formatWeekRange(report.weekStart, report.weekEnd) }}
+          </span>
+          </div>
+
+          <div class="week-grid">
+            <div class="week-stat">
+              <span>Total</span>
+              <strong>{{ report.totalTasks }}</strong>
+            </div>
+
+            <div class="week-stat">
+              <span>Completed</span>
+              <strong>{{ report.completedTasks }}</strong>
+            </div>
+
+            <div class="week-stat">
+              <span>In progress</span>
+              <strong>{{ report.inProgressTasks }}</strong>
+            </div>
+
+            <div class="week-stat">
+              <span>Blocked</span>
+              <strong>{{ report.blockedTasks }}</strong>
+            </div>
+          </div>
+        </div>
+      }
+    }
+
+    <nav
+      aria-label="WorkTracker companion shortcuts"
+      class="assistant-navigation"
+    >
+      <button
+        (click)="navigate('/quests')"
+        type="button"
+      >
+        Quests
+      </button>
+
+      <button
+        (click)="navigate('/weekly-log')"
+        type="button"
+      >
+        Weekly Log
+      </button>
+
+      <button
+        (click)="navigate('/history')"
+        type="button"
+      >
+        History
+      </button>
+
+      <button
+        (click)="navigate('/settings')"
+        type="button"
+      >
+        Settings
+      </button>
+
+      <button
+        (click)="navigate('/chill-room')"
+        type="button"
+      >
+        Chill Room
+        <span aria-hidden="true">→</span>
+      </button>
+    </nav>
+  }
+</section>

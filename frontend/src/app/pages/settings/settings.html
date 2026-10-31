@@ -145,6 +145,59 @@
         </label>
       </section>
 
+      <section class="settings-card card">
+        <div class="settings-card-heading">
+          <div>
+      <span class="section-kicker">
+        LOCAL AI
+      </span>
+
+            <h2>AI Companion setup</h2>
+
+            <p>
+              Use local AI to chat about your work and
+              import notes intelligently. WorkTracker
+              reuses existing Ollama and Qwen installations.
+              Missing dependencies are optional downloads.
+            </p>
+          </div>
+        </div>
+
+        <div class="settings-actions">
+          <button
+            (click)="setupLocalAi()"
+            [disabled]="aiSetupBusy() || !aiSetupAvailable"
+            class="save-settings-button"
+            type="button"
+          >
+            @if (aiSetupBusy()) {
+              Checking AI...
+            } @else {
+              Check / Set up Local AI
+            }
+          </button>
+        </div>
+
+        @if (!aiSetupAvailable) {
+          <div class="settings-message" role="status">
+            AI setup is available in the WorkTracker
+            desktop application.
+          </div>
+        }
+
+        @if (aiSetupMessage()) {
+          <div
+            [class.error]="aiSetupError()"
+            [class.success]="!aiSetupError()"
+            aria-live="polite"
+            class="settings-message"
+            role="status"
+          >
+            {{ aiSetupMessage() }}
+          </div>
+        }
+      </section>
+
       <section class="settings-card local-card card">
         <div class="local-icon">
           ◌

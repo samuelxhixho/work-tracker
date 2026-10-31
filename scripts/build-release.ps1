@@ -89,7 +89,7 @@ try {
     $env:Path =
         "$(Join-Path $JavaHome 'bin');$oldPath"
 
-    Write-Host "[1/5] Building Angular frontend..."
+    Write-Host "[1/6] Building Angular frontend..."
 
     Push-Location $frontendDirectory
 
@@ -120,7 +120,7 @@ try {
     }
 
     Write-Host ""
-    Write-Host "[2/5] Copying Angular into Spring Boot..."
+    Write-Host "[2/6] Copying Angular into Spring Boot..."
 
     if (Test-Path $backendStaticDirectory) {
         Remove-Item `
@@ -142,7 +142,7 @@ try {
         -Force
 
     Write-Host ""
-    Write-Host "[3/5] Building Spring Boot..."
+    Write-Host "[3/6] Building Spring Boot..."
 
     Push-Location $backendDirectory
 
@@ -167,7 +167,41 @@ try {
     }
 
     Write-Host ""
-    Write-Host "[4/5] Building Java runtime..."
+    Write-Host "[4/6] Extracting Spring Boot backend..."
+
+    $extractedBackendDirectory =
+    Join-Path `
+        $backendDirectory `
+        "target\extracted"
+
+    if (Test-Path $extractedBackendDirectory) {
+        Remove-Item `
+        $extractedBackendDirectory `
+        -Recurse `
+        -Force
+    }
+
+    & $java `
+    "-Djarmode=tools" `
+    -jar $jar `
+    extract `
+    --destination $extractedBackendDirectory
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "Spring Boot extraction failed."
+    }
+
+    if (
+    -not (
+    Test-Path (
+    Join-Path `
+                $extractedBackendDirectory `
+                "backend-0.0.1-SNAPSHOT.jar"
+    )
+    )
+    ) {
+        throw "Extracted Spring Boot JAR was not created."
+    }
 
     & "$PSScriptRoot\build-runtime.ps1" `
         -JavaHome $JavaHome
@@ -177,7 +211,7 @@ try {
     }
 
     Write-Host ""
-    Write-Host "[5/5] Building Windows installer..."
+    Write-Host "[6/6] Building Windows installer..."
 
     Push-Location $desktopDirectory
 
